@@ -1,0 +1,909 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Chiller & Air Compressor Dashboard</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js "></script>
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css " rel="stylesheet" />
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: linear-gradient(105deg, #66FF99 0%, #FFFF99 100%);
+      min-height: 100vh;
+      padding: 20px;
+    }
+    .container {
+      max-width: 1600px;
+      margin: 0 auto;
+      background: rgba(255, 255, 255, 0.1);
+      backdrop-filter: blur(20px);
+      border-radius: 30px;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      box-shadow: 0 30px 60px rgba(0, 0, 0, 0.15);
+      overflow: hidden;
+      position: relative;
+    }
+    .container::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 2px;
+      background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.8), transparent);
+      animation: shimmer 2s infinite;
+    }
+    @keyframes shimmer {
+      0% { transform: translateX(-100%); }
+      100% { transform: translateX(100%); }
+    }
+    .header {
+      background: linear-gradient(135deg, #256eff 0%, #6fd0ff 100%);
+      padding: 40px 30px;
+      text-align: center;
+      color: white;
+      position: relative;
+      overflow: hidden;
+    }
+    .header::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="grid" width="10" height="10" patternUnits="userSpaceOnUse"><path d="M 10 0 L 0 0 0 10" fill="none" stroke="rgba(255,255,255,0.1)" stroke-width="0.5"/></pattern></defs><rect width="100" height="100" fill="url(%23grid)"/></svg>');
+      opacity: 0.4;
+      box-shadow: inset 0 0 10px rgba(255, 255, 255, 0.2);
+    }
+    .header h1 {
+      font-size: 3em;
+      margin-bottom: 15px;
+      text-shadow: 2px 2px 4px rgba(0, 0, 0, 0);
+      position: relative;
+      z-index: 1;
+     background: linear-gradient(45deg, #ffd700, #ffcc00);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .header p {
+      font-size: 1.3em;
+      opacity: 0.95;
+      position: relative;
+      z-index: 1;
+      font-weight: 400;
+      letter-spacing: 0.8px;
+    }
+    .controls {
+      padding: 40px 30px;
+      background: rgba(255, 255, 255, 0.95);
+      backdrop-filter: blur(10px);
+      border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+    }
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 25px;
+      margin-bottom: 40px;
+    }
+    .stat-card {
+      background: linear-gradient(135deg, #fff 0%, #f8f9fa 100%);
+      padding: 30px;
+      border-radius: 20px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+      text-align: center;
+      transition: all 0.4s ease;
+      border: 1px solid rgba(255, 255, 255, 0.5);
+      position: relative;
+      overflow: hidden;
+    }
+    .stat-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 4px;
+      background: linear-gradient(90deg, #256eff, #6fd0ff);
+      transform: scaleX(0);
+      transition: transform 0.4s ease;
+    }
+    .stat-card:hover::before {
+      transform: scaleX(1);
+    }
+    .stat-card:hover {
+      transform: translateY(-10px) scale(1.02);
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+    }
+    .stat-icon {
+      font-size: 2.5em;
+      margin-bottom: 15px;
+      background: linear-gradient(45deg, #256eff, #6fd0ff);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .stat-number {
+      font-size: 2.5em;
+      font-weight: 800;
+      background: linear-gradient(45deg, #256eff, #6fd0ff);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      margin-bottom: 10px;
+      text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1);
+    }
+    .stat-label {
+      color: #6c757d;
+      font-size: 0.95em;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      font-weight: 600;
+    }
+    .control-group {
+      margin-bottom: 30px;
+    }
+    .control-group label {
+      display: block;
+      margin-bottom: 15px;
+      font-weight: 700;
+      color: #495057;
+      font-size: 1.1em;
+      letter-spacing: 0.5px;
+    }
+    .meter-filters {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+      gap: 15px;
+      margin-bottom: 30px;
+    }
+    .filter-item {
+      display: flex;
+      align-items: center;
+      padding: 18px 25px;
+      background: linear-gradient(135deg, #fff 0%, #f8f9fa 100%);
+      border-radius: 15px;
+      box-shadow: 0 5px 20px rgba(0, 0, 0, 0.08);
+      transition: all 0.3s ease;
+      min-height: 60px;
+      position: relative;
+      border: 2px solid transparent;
+      cursor: pointer;
+    }
+    .filter-item::before {
+      content: '';
+      position: absolute;
+      left: 0;
+      top: 0;
+      bottom: 0;
+      width: 6px;
+      border-radius: 15px 0 0 15px;
+      background-color: #e0e0e0;
+      transition: all 0.3s ease;
+    }
+    .filter-item.status-active::before {
+      background: linear-gradient(135deg, #4caf50, #8bc34a);
+      box-shadow: 0 0 15px rgba(76, 175, 80, 0.3);
+    }
+    .filter-item.status-standby::before {
+      background: linear-gradient(135deg, #ff9800, #ffc107);
+      box-shadow: 0 0 15px rgba(255, 152, 0, 0.3);
+    }
+    .filter-item.status-off::before {
+      background: linear-gradient(135deg, #f44336, #e57373);
+      box-shadow: 0 0 15px rgba(124, 67, 54, 0.3);
+    }
+    .filter-item:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.12);
+      border-color: rgba(37, 111, 255, 0.3);
+    }
+    .filter-item input[type="checkbox"] {
+      margin-right: 18px;
+      transform: scale(1.4);
+      cursor: pointer;
+      accent-color: #256eff;
+    }
+    .filter-item label {
+      margin: 0;
+      cursor: pointer;
+      flex: 1;
+      font-size: 15px;
+      font-weight: 600;
+      color: #495057;
+      transition: color 0.3s ease;
+    }
+    .filter-item:hover label {
+      color: #256eff;
+    }
+    .color-indicator {
+      width: 30px;
+      height: 30px;
+      border-radius: 50%;
+      margin-left: 15px;
+      border: 3px solid white;
+      box-shadow: 0 3px 10px rgba(0, 0, 0, 0.15);
+      flex-shrink: 0;
+      position: relative;
+      overflow: hidden;
+    }
+    .color-indicator::after {
+      content: '';
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: 6px;
+      height: 6px;
+      background: rgba(255, 255, 255, 0.8);
+      border-radius: 50%;
+      transform: translate(-50%, -50%);
+      animation: glow 2s infinite;
+    }
+    @keyframes glow {
+      0%, 100% { opacity: 0.3; }
+      50% { opacity: 1; }
+    }
+    .action-buttons {
+      display: flex;
+      gap: 20px;
+      justify-content: center;
+      flex-wrap: wrap;
+      margin-top: 20px;
+    }
+    .btn {
+      padding: 15px 30px;
+      border: none;
+      border-radius: 30px;
+      font-size: 16px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      position: relative;
+      overflow: hidden;
+      min-width: 160px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+    .btn::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: -100%;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+      transition: left 0.5s ease;
+    }
+    .btn:hover::before {
+      left: 100%;
+    }
+    .btn-primary {
+      background: linear-gradient(135deg, #256eff, #6fd0ff);
+      color: white;
+      box-shadow: 0 5px 20px rgba(37, 111, 255, 0.3);
+    }
+    .btn-success {
+      background: linear-gradient(135deg, #4caf50, #8bc34a);
+      color: white;
+      box-shadow: 0 5px 20px rgba(76, 175, 80, 0.3);
+    }
+    .btn-info {
+      background: linear-gradient(135deg, #2196f3, #21cbf3);
+      color: white;
+      box-shadow: 0 5px 20px rgba(33, 150, 123, 0.3);
+    }
+    .btn-warning {
+      background: linear-gradient(135deg, #ff9800, #ffc107);
+      color: white;
+      box-shadow: 0 5px 20px rgba(255, 152, 0, 0.3);
+    }
+    .btn-secondary {
+      background: linear-gradient(135deg, #6c757d, #adb5bd);
+      color: white;
+      box-shadow: 0 5px 20px rgba(108, 117, 125, 0.3);
+    }
+    .btn:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+    }
+    .btn:active {
+      transform: translateY(-1px);
+    }
+    .chart-container {
+      padding: 40px 30px;
+      background: linear-gradient(135deg, #fff 0%, #f8f9fa 100%);
+      position: relative;
+    }
+    .chart-header {
+      text-align: center;
+      margin-bottom: 30px;
+    }
+    .chart-title {
+      font-size: 2em;
+      font-weight: 800;
+      background: linear-gradient(45deg, #256eff, #6fd0ff);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      margin-bottom: 15px;
+    }
+    .chart-wrapper {
+      position: relative;
+      height: 700px;
+      background: linear-gradient(135deg, #fff 0%, #f8f9fa 100%);
+      border-radius: 20px;
+      padding: 30px;
+      box-shadow: inset 0 5px 20px rgba(0, 0, 0, 0.05);
+      border: 1px solid rgba(37, 111, 255, 0.1);
+    }
+    .loading {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 600px;
+      font-size: 18px;
+      color: #6c757d;
+      flex-direction: column;
+      gap: 20px;
+    }
+    .spinner {
+      width: 50px;
+      height: 50px;
+      border: 4px solid #f3f3f3;
+      border-top: 4px solid #256eff;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+    }
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+    .loading-text {
+      font-weight: 600;
+      letter-spacing: 0.5px;
+    }
+    /* Responsive Design */
+    @media (max-width: 1400px) {
+      .meter-filters {
+        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      }
+    }
+    @media (max-width: 1012px) {
+      .container {
+        margin: 10px;
+        border-radius: 20px;
+      }
+      .header h1 {
+        font-size: 2.5em;
+      }
+      .stats {
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 20px;
+      }
+      .chart-wrapper {
+        height: 600px;
+        padding: 20px;
+      }
+    }
+    @media (max-width: 768px) {
+      body {
+        padding: 10px;
+      }
+      .header {
+        padding: 30px 20px;
+      }
+      .header h1 {
+        font-size: 2em;
+      }
+      .controls {
+        padding: 30px 20px;
+      }
+      .meter-filters {
+        grid-template-columns: 1fr;
+        gap: 12px;
+      }
+      .filter-item {
+        padding: 15px 20px;
+        min-height: 55px;
+      }
+      .action-buttons {
+        flex-direction: column;
+        align-items: center;
+      }
+      .btn {
+        width: 100%;
+        max-width: 350px;
+      }
+      .chart-wrapper {
+        height: 500px;
+        padding: 15px;
+      }
+    }
+    @media (max-width: 480px) {
+      .stats {
+        grid-template-columns: 1fr;
+      }
+      .stat-card {
+        padding: 20px;
+      }
+      .chart-title {
+        font-size: 1.5em;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1><i class="fas fa-bolt"></i> Power Monitoring Dashboard</h1>
+      <p>Chiller & Air Compressor Real-time Analytics</p>
+    </div>
+    <div class="controls">
+      <div class="stats" id="statsContainer">
+        <div class="stat-card">
+          <div class="stat-icon">
+            <i class="fas fa-fan"></i>
+          </div>
+          <div class="stat-number" id="totalPowerCompressor">0</div>
+          <div class="stat-label">Total Power Air Compressor (kW)</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon">
+            <i class="fas fa-snowflake"></i>
+          </div>
+          <div class="stat-number" id="totalPowerChiller">0</div>
+          <div class="stat-label">Total Power Chiller (kW)</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon">
+            <i class="fas fa-chart-line"></i>
+          </div>
+          <div class="stat-number" id="totalPower">0</div>
+          <div class="stat-label">Current Total (kW)</div>
+        </div>
+      </div>
+      <div class="control-group">
+        <label><i class="fas fa-filter"></i> Select Meters to Display:</label>
+        <div class="meter-filters" id="meterFilters">
+          <!-- Filters will be populated dynamically -->
+        </div>
+      </div>
+      <div class="action-buttons">
+        <button class="btn btn-primary" onclick="selectAll()">
+          <i class="fas fa-check-double"></i> Select All
+        </button>
+        <button class="btn btn-primary" onclick="deselectAll()">
+          <i class="fas fa-times"></i> Deselect All
+        </button>
+        <button class="btn btn-warning" onclick="selectChillers()">
+          <i class="fas fa-snowflake"></i> Chillers Only
+        </button>
+        <button class="btn btn-secondary" onclick="selectCompressors()">
+          <i class="fas fa-fan"></i> Air Compressors Only
+        </button>
+        <button class="btn btn-success" onclick="exportCSV()">
+          <i class="fas fa-file-csv"></i> Export CSV
+        </button>
+        <button class="btn btn-info" onclick="exportJPEG()">
+          <i class="fas fa-image"></i> Export JPEG
+        </button>
+      </div>
+    </div>
+    <div class="chart-container">
+      <div class="chart-header">
+        <div class="chart-title">Electric Power Usage Monitoring</div>
+      </div>
+      <div class="chart-wrapper">
+        <div class="loading" id="loading">
+          <div class="spinner"></div>
+          <div class="loading-text">Loading data...</div>
+        </div>
+        <canvas id="myChart" style="display: none;"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let chartInstance = null;
+    let rawData = null;
+    let allDatasets = [];
+    let filteredData = null;
+    let refreshInterval = null;
+    let countdownInterval = null;
+    let remainingTime = 15 * 60;
+    const colors = [
+      '#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FECA57',
+      '#FF9FF3', '#54A0FF', '#5F27CD', '#00D2D3', '#FF9F43',
+      '#EE5A12', '#0984e3', '#6C5CE7', '#A29BFE', '#FD79A8'
+    ];
+    const originalUrl = 'https://www.dropbox.com/scl/fi/a4t6fdzev3fqm3luksein/Chiller_Compress_Air_07_2025.csv?rlkey=rkr26zprf6yis4q1q22umcqeq&raw=1';
+    const proxyUrl = ' https://corsproxy.io/?' + encodeURIComponent(originalUrl);
+
+    function parseCustomDate(dateStr) {
+      const [datePart, timePart] = dateStr.split(' ');
+      const [day, month, year] = datePart.split('/');
+      return `${year}-${month}-${day}T${timePart}`;
+    }
+
+    function filterLast24Hours(data) {
+      if (!data || data.length === 0) return data;
+
+      try {
+        const latestTimestamp = new Date(parseCustomDate(data[data.length - 1][0]));
+        const cutoffTime = new Date(latestTimestamp.getTime() - (24 * 60 * 60 * 1000));
+
+        const filtered = data.filter(row => {
+          const timestamp = new Date(parseCustomDate(row[0]));
+          return timestamp >= cutoffTime && !isNaN(timestamp.getTime());
+        });
+
+        return filtered.length > 0 ? filtered : data;
+      } catch (error) {
+        console.warn('Error filtering 24-hour data, using all ', error);
+        return data;
+      }
+    }
+
+    async function loadData() {
+      try {
+        remainingTime = 15 * 60;
+        const response = await fetch(proxyUrl);
+        const csv = await response.text();
+        const lines = csv.trim().split('\n');
+        const headers = lines[0].split(',').map(h => h.trim());
+        const data = lines.slice(1).map(line => line.split(','));
+
+        rawData = { timestamps: data.map(row => row[0]), headers: headers, data };
+
+        const last24HoursData = filterLast24Hours(data);
+        filteredData = {
+          timestamps: last24HoursData.map(row => row[0]),
+          headers: headers,
+          data: last24HoursData
+        };
+
+        allDatasets = [];
+        for (let i = 1; i < headers.length; i++) {
+          const label = headers[i];
+          const color = colors[(i - 1) % colors.length];
+          const values = last24HoursData.map(row => parseFloat(row[i]) || 0);
+          allDatasets.push({
+            label: label,
+            data: values,
+            borderColor: color,
+            backgroundColor: color + '20',
+            borderWidth: 3,
+            fill: false,
+            tension: 0.4,
+            pointRadius: 0,
+            pointHoverRadius: 6,
+            pointHoverBackgroundColor: color,
+            pointHoverBorderColor: '#fff',
+            pointHoverBorderWidth: 3
+          });
+        }
+
+        createFilters();
+        updateStats();
+        createChart();
+        document.getElementById('loading').style.display = 'none';
+        document.getElementById('myChart').style.display = 'block';
+      } catch (error) {
+        console.error('Error loading data:', error);
+        document.getElementById('loading').innerHTML =
+          '<div class="spinner"></div><div class="loading-text">Error loading data. Please try again.</div>';
+      }
+    }
+
+    function createFilters() {
+      const filtersContainer = document.getElementById('meterFilters');
+      filtersContainer.innerHTML = '';
+      const latestData = filteredData.data[filteredData.data.length - 1];
+
+      allDatasets.forEach((dataset, index) => {
+        const value = parseFloat(latestData[index + 1]) || 0;
+        let statusClass = 'status-off';
+        if (value > 1) statusClass = 'status-active';
+        else if (value > 0.05) statusClass = 'status-standby';
+
+        const filterItem = document.createElement('div');
+        filterItem.className = `filter-item ${statusClass}`;
+
+        const checkbox = document.createElement('input');
+        checkbox.type = 'checkbox';
+        checkbox.id = `meter_${index}`;
+        checkbox.checked = true;
+        checkbox.addEventListener('change', updateChart);
+
+        const label = document.createElement('label');
+        label.htmlFor = `meter_${index}`;
+        label.textContent = dataset.label;
+
+        const colorIndicator = document.createElement('div');
+        colorIndicator.className = 'color-indicator';
+        colorIndicator.style.backgroundColor = dataset.borderColor;
+
+        filterItem.appendChild(checkbox);
+        filterItem.appendChild(label);
+        filterItem.appendChild(colorIndicator);
+        filtersContainer.appendChild(filterItem);
+      });
+    }
+
+    function updateChart() {
+      if (!chartInstance) return;
+      const activeDatasets = [];
+      const checkboxes = document.querySelectorAll('input[type="checkbox"]');
+      const latestData = filteredData.data[filteredData.data.length - 1];
+
+      checkboxes.forEach((checkbox, index) => {
+        const value = parseFloat(latestData[index + 1]) || 0;
+        let statusClass = 'status-off';
+        if (value > 1) statusClass = 'status-active';
+        else if (value > 0.05) statusClass = 'status-standby';
+
+        const filterItem = checkbox.parentElement;
+        filterItem.className = 'filter-item ' + statusClass;
+
+        if (checkbox.checked) {
+          activeDatasets.push(allDatasets[index]);
+        }
+      });
+
+      chartInstance.data.datasets = activeDatasets;
+      chartInstance.update('none');
+      updateStats();
+    }
+
+    function updateStats() {
+      if (!filteredData || filteredData.data.length === 0) return;
+      const latestData = filteredData.data[filteredData.data.length - 1];
+      const totalPower = latestData.slice(1).reduce((sum, val) => sum + (parseFloat(val) || 0), 0);
+
+      let compressorTotal = 0;
+      let chillerTotal = 0;
+      const compressorMeters = ['BD2_GA90_VSD', 'BD1_COMP_AIR_GA90_2', 'BD1_COMP_AIR_GA90_1'];
+
+      for (let i = 1; i < filteredData.headers.length; i++) {
+        const headerName = filteredData.headers[i].trim();
+        const value = parseFloat(latestData[i]) || 0;
+
+        if (compressorMeters.includes(headerName)) {
+          compressorTotal += value;
+        } else if (headerName.toLowerCase().includes('chiller') || headerName.toLowerCase().includes('chill')) {
+          chillerTotal += value;
+        }
+      }
+
+      animateNumber('totalPowerCompressor', compressorTotal);
+      animateNumber('totalPowerChiller', chillerTotal);
+      animateNumber('totalPower', totalPower);
+    }
+
+    function animateNumber(elementId, targetValue) {
+      const element = document.getElementById(elementId);
+      const currentValue = parseFloat(element.textContent) || 0;
+      const increment = (targetValue - currentValue) / 30;
+      let current = currentValue;
+      const timer = setInterval(() => {
+        current += increment;
+        if ((increment > 0 && current >= targetValue) || (increment < 0 && current <= targetValue)) {
+          current = targetValue;
+          clearInterval(timer);
+        }
+        element.textContent = current.toFixed(1);
+      }, 16);
+    }
+
+    function createChart() {
+      const ctx = document.getElementById('myChart').getContext('2d');
+      if (chartInstance) chartInstance.destroy();
+
+      chartInstance = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: filteredData.timestamps,
+          datasets: allDatasets
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: {
+              position: 'top',
+              labels: {
+                boxWidth: 12,
+                padding: 20,
+                usePointStyle: true,
+                font: { size: 13, weight: '600' },
+                color: '#495057'
+              }
+            },
+            tooltip: {
+              mode: 'index',
+              intersect: false,
+              backgroundColor: 'rgba(0, 0, 0, 0.9)',
+              titleColor: '#fff',
+              bodyColor: '#fff',
+              borderColor: '#667eea',
+              borderWidth: 2,
+              cornerRadius: 12,
+              displayColors: true,
+              padding: 15,
+              titleFont: { size: 14, weight: 'bold' },
+              bodyFont: { size: 13 }
+            }
+          },
+          scales: {
+            x: {
+              display: true,
+              title: {
+                display: true,
+                text: 'Time (Last 24 Hours)',
+                font: { size: 15, weight: 'bold' },
+                color: '#495057'
+              },
+              ticks: {
+                maxTicksLimit: 24,
+                autoSkip: true,
+                font: { size: 12 },
+                color: '#6c757d'
+              },
+              grid: {
+                color: 'rgba(0, 0, 0, 0.05)',
+                drawBorder: false
+              }
+            },
+            y: {
+              display: true,
+              title: {
+                display: true,
+                text: 'Power (kW)',
+                font: { size: 15, weight: 'bold' },
+                color: '#495057'
+              },
+              ticks: {
+                font: { size: 12 },
+                color: '#6c757d'
+              },
+              grid: {
+                color: 'rgba(0, 0, 0, 0.05)',
+                drawBorder: false
+              }
+            }
+          },
+          interaction: {
+            mode: 'nearest',
+            axis: 'x',
+            intersect: false
+          },
+          animation: {
+            duration: 1500,
+            easing: 'easeInOutQuart'
+          },
+          elements: {
+            line: {
+              borderJoinStyle: 'round'
+            }
+          }
+        }
+      });
+    }
+
+    function selectAll() {
+      const checkboxes = document.querySelectorAll('input[type="checkbox"]');
+      checkboxes.forEach(cb => cb.checked = true);
+      updateChart();
+    }
+
+    function deselectAll() {
+      const checkboxes = document.querySelectorAll('input[type="checkbox"]');
+      checkboxes.forEach(cb => cb.checked = false);
+      updateChart();
+    }
+
+    function selectChillers() {
+      const checkboxes = document.querySelectorAll('input[type="checkbox"]');
+      checkboxes.forEach((cb, index) => {
+        const label = allDatasets[index]?.label.toLowerCase() || '';
+        cb.checked = label.includes('chiller') || label.includes('chill');
+      });
+      updateChart();
+    }
+
+    function selectCompressors() {
+      const checkboxes = document.querySelectorAll('input[type="checkbox"]');
+      const compressorMeters = ['BD2_GA90_VSD', 'BD1_COMP_AIR_GA90_2', 'BD1_COMP_AIR_GA90_1'];
+      checkboxes.forEach((cb, index) => {
+        cb.checked = compressorMeters.includes(allDatasets[index]?.label);
+      });
+      updateChart();
+    }
+
+    function exportCSV() {
+      if (!rawData) return;
+      const activeColumns = [0];
+      const checkboxes = document.querySelectorAll('input[type="checkbox"]');
+      checkboxes.forEach((cb, index) => {
+        if (cb.checked) activeColumns.push(index + 1);
+      });
+
+      let csvContent = '';
+      const headers = activeColumns.map(i => rawData.headers[i]);
+      csvContent += headers.join(',') + '\n';
+      rawData.data.forEach(row => {
+        const activeRow = activeColumns.map(i => row[i]);
+        csvContent += activeRow.join(',') + '\n';
+      });
+
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const link = document.createElement('a');
+      const url = URL.createObjectURL(blob);
+      link.setAttribute('href', url);
+      link.setAttribute('download', `power_data_${new Date().toISOString().split('T')[0]}.csv`);
+      link.style.visibility = 'hidden';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
+
+    function exportJPEG() {
+      if (!chartInstance) return;
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
+      const chartCanvas = chartInstance.canvas;
+      const scale = 2;
+      canvas.width = chartCanvas.width * scale;
+      canvas.height = chartCanvas.height * scale;
+      ctx.scale(scale, scale);
+      ctx.fillStyle = 'white';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.drawImage(chartCanvas, 0, 0);
+      const link = document.createElement('a');
+      link.download = `power_chart_${new Date().toISOString().split('T')[0]}.jpg`;
+      link.href = canvas.toDataURL('image/jpeg', 0.95);
+      link.click();
+    }
+
+    function startAutoRefresh() {
+      if (refreshInterval) clearInterval(refreshInterval);
+      if (countdownInterval) clearInterval(countdownInterval);
+      refreshInterval = setInterval(loadData, 15 * 60 * 1000);
+      remainingTime = 15 * 60;
+      updateCountdown();
+      countdownInterval = setInterval(updateCountdown, 1000);
+    }
+
+    function updateCountdown() {
+      const minutes = Math.floor(remainingTime / 60);
+      const seconds = remainingTime % 60;
+      document.getElementById('countdown').textContent =
+        `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+      remainingTime--;
+      if (remainingTime < 0) remainingTime = 15 * 60;
+    }
+
+    document.addEventListener('DOMContentLoaded', function () {
+      document.body.style.opacity = '0';
+      setTimeout(() => {
+        document.body.style.transition = 'opacity 0.5s ease';
+        document.body.style.opacity = '1';
+      }, 100);
+      loadData().then(() => {
+        startAutoRefresh();
+      });
+    });
+  </script>
+</body>
+</html>
