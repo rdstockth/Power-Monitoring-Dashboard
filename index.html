@@ -19,8 +19,8 @@
       padding: 20px;
     }
     .container {
-      max-width: calc(100% - 70px);
-      margin-left: 70px;
+      max-width: calc(100% - 40px);
+      margin-left: 40px;
       background: rgba(255, 255, 255, 0.1);
       backdrop-filter: blur(20px);
       border-radius: 30px;
@@ -85,36 +85,36 @@
       position: fixed;
       top: 0;
       left: 0;
-      width: 70px;
+      width: 40px;
       height: 100vh;
       background: linear-gradient(180deg, #256eff 0%, #6fd0ff 100%);
       display: flex;
       flex-direction: column;
       align-items: center;
-      padding-top: 20px;
-      box-shadow: 2px 0 10px rgba(0, 0, 0, 0.2);
+      padding-top: 10px;
+      box-shadow: 2px 0 5px rgba(0, 0, 0, 0.1);
       z-index: 9999;
       transition: width 0.3s ease;
     }
     .sidebar:hover {
-      width: 200px;
+      width: 120px;
     }
     .sidebar-item {
       width: 100%;
-      padding: 15px;
+      padding: 10px;
       display: flex;
       align-items: center;
       color: white;
       text-decoration: none;
-      font-size: 14px;
-      font-weight: 600;
+      font-size: 12px;
+      font-weight: 500;
       transition: all 0.3s ease;
       position: relative;
     }
     .sidebar-item i {
-      font-size: 20px;
-      margin-right: 10px;
-      min-width: 30px;
+      font-size: 16px;
+      margin-right: 8px;
+      min-width: 24px;
       text-align: center;
     }
     .sidebar-item span {
@@ -125,8 +125,8 @@
       opacity: 1;
     }
     .sidebar-item:hover {
-      background: rgba(255, 255, 255, 0.2);
-      transform: translateX(5px);
+      background: rgba(255, 255, 255, 0.15);
+      transform: translateX(3px);
     }
     .sidebar-item::before {
       content: '';
@@ -134,7 +134,7 @@
       left: 0;
       top: 0;
       bottom: 0;
-      width: 4px;
+      width: 3px;
       background: linear-gradient(180deg, #ffd700, #ffcc00);
       opacity: 0;
       transition: opacity 0.3s ease;
@@ -441,7 +441,8 @@
     }
     @media (max-width: 1012px) {
       .container {
-        margin: 10px 10px 10px 70px;
+        margin: 10px 10px 10px 40px;
+        max-width: calc(100% - 40px);
         border-radius: 20px;
       }
       .header h1 {
@@ -490,22 +491,22 @@
         padding: 15px;
       }
       .sidebar {
-        width: 50px;
+        width: 35px;
       }
       .sidebar:hover {
-        width: 150px;
+        width: 100px;
       }
       .sidebar-item {
-        padding: 10px;
-        font-size: 12px;
+        padding: 8px;
+        font-size: 11px;
       }
       .sidebar-item i {
-        font-size: 18px;
-        margin-right: 8px;
+        font-size: 14px;
+        margin-right: 6px;
       }
       .container {
-        margin-left: 50px;
-        max-width: calc(100% - 50px);
+        margin-left: 35px;
+        max-width: calc(100% - 35px);
       }
     }
     @media (max-width: 480px) {
@@ -519,20 +520,20 @@
         font-size: 1.5em;
       }
       .sidebar {
-        width: 40px;
+        width: 30px;
       }
       .sidebar:hover {
-        width: 120px;
+        width: 90px;
       }
       .sidebar-item {
-        padding: 8px;
+        padding: 6px;
       }
       .sidebar-item i {
-        font-size: 16px;
+        font-size: 12px;
       }
       .container {
-        margin-left: 40px;
-        max-width: calc(100% - 40px);
+        margin-left: 30px;
+        max-width: calc(100% - 30px);
       }
     }
   </style>
@@ -634,6 +635,8 @@
     const originalUrl = 'https://www.dropbox.com/scl/fi/ujzaectxfzcd572a1ehb4/Chiller_Compress_Air.csv?rlkey=0myy02d0l5kfz8xxzkk7s011r&raw=1';
     const proxyUrl = 'https://corsproxy.io/?' + encodeURIComponent(originalUrl);
 
+    const compressorMeters = ['BD2_GA90_VSD', 'BD1_COMP_AIR_GA90_2', 'BD1_COMP_AIR_GA90_1'];
+
     const fallbackData = [
       "Timestamp,BD2_GA90_VSD,BD1_COMP_AIR_GA90_2,BD1_COMP_AIR_GA90_1,CHILLER_1",
       "01/01/2025 00:00,10.5,12.3,11.8,15.2",
@@ -644,10 +647,12 @@
     function parseCustomDate(dateStr) {
       try {
         const [datePart, timePart] = dateStr.split(' ');
+        if (!datePart || !timePart) throw new Error('Invalid date format: missing date or time');
         const [day, month, year] = datePart.split('/');
+        if (!day || !month || !year) throw new Error('Invalid date format: incomplete date');
         const formattedDate = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}T${timePart}`;
         const date = new Date(formattedDate);
-        if (isNaN(date.getTime())) throw new Error('Invalid date format');
+        if (isNaN(date.getTime())) throw new Error('Invalid date format: cannot parse date');
         return formattedDate;
       } catch (error) {
         console.error('Error parsing date:', dateStr, error);
@@ -685,6 +690,8 @@
       const loadingElement = document.getElementById('loading');
       const chartElement = document.getElementById('myChart');
 
+      loadingElement.innerHTML = '<div class="spinner"></div><div class="loading-text">Loading data...</div>';
+
       const timeout = setTimeout(() => {
         loadingElement.innerHTML = '<div class="spinner"></div><div class="loading-text">Request timed out. Please try again.</div>';
       }, 10000);
@@ -696,7 +703,7 @@
           const response = await fetch(proxyUrl, { cache: 'no-store' });
           if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
           csv = await response.text();
-          console.log('Raw CSV data:', csv.substring(0, 200));
+          console.log('Raw CSV data (first 200 chars):', csv.substring(0, 200));
         } catch (error) {
           console.warn('Failed to fetch data, using fallback data:', error);
           csv = fallbackData;
@@ -712,10 +719,14 @@
         }
 
         const headers = lines[0].split(',').map(h => h.trim());
+        if (headers.length < 2) {
+          throw new Error('CSV headers are invalid or missing');
+        }
+
         const data = lines.slice(1).map(line => {
           const values = line.split(',');
           if (values.length !== headers.length) {
-            console.warn('Invalid row length:', line);
+            console.warn('Invalid row length, skipping:', line);
             return null;
           }
           return values;
@@ -738,7 +749,10 @@
         for (let i = 1; i < headers.length; i++) {
           const label = headers[i];
           const color = colors[(i - 1) % colors.length];
-          const values = last24HoursData.map(row => parseFloat(row[i]) || 0);
+          const values = last24HoursData.map(row => {
+            const value = parseFloat(row[i]);
+            return isNaN(value) ? 0 : value;
+          });
           allDatasets.push({
             label: label,
             data: values,
@@ -774,6 +788,7 @@
       filtersContainer.innerHTML = '';
       if (!filteredData || !filteredData.data || filteredData.data.length === 0) {
         console.warn('No filtered data for filters');
+        filtersContainer.innerHTML = '<div class="loading-text">No data available for filters.</div>';
         return;
       }
       const latestData = filteredData.data[filteredData.data.length - 1];
@@ -846,7 +861,6 @@
 
       let compressorTotal = 0;
       let chillerTotal = 0;
-      const compressorMeters = ['BD2_GA90_VSD', 'BD1_COMP_AIR_GA90_2', 'BD1_COMP_AIR_GA90_1'];
 
       for (let i = 1; i < filteredData.headers.length; i++) {
         const headerName = filteredData.headers[i].trim();
@@ -1005,7 +1019,6 @@
 
     function selectCompressors() {
       const checkboxes = document.querySelectorAll('input[type="checkbox"]');
-      const compressorMeters = ['BD2_GA90_VSD', 'BD1_COMP_AIR_GA90_2', 'BD1_COMP_AIR_GA90_1'];
       checkboxes.forEach((cb, index) => {
         cb.checked = compressorMeters.includes(allDatasets[index]?.label);
       });
@@ -1015,6 +1028,7 @@
     function exportCSV() {
       if (!rawData) {
         console.warn('No raw data to export');
+        alert('No data available to export.');
         return;
       }
       const activeColumns = [0];
@@ -1045,6 +1059,7 @@
     function exportJPEG() {
       if (!chartInstance) {
         console.warn('No chart instance to export');
+        alert('No chart available to export.');
         return;
       }
       const canvas = document.createElement('canvas');
@@ -1093,6 +1108,11 @@
       loadData().then(() => {
         console.log('Data loaded successfully, starting auto refresh');
         startAutoRefresh();
+      }).catch(error => {
+        console.error('Initial data load failed:', error);
+        const loadingElement = document.getElementById('loading');
+        loadingElement.innerHTML =
+          `<div class="spinner"></div><div class="loading-text">Error: ${error.message}. <br>Click <a href="#" onclick="loadData()">here</a> to retry.</div>`;
       });
     });
   </script>
