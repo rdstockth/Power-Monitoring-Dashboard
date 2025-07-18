@@ -4,8 +4,8 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Chiller & Air Compressor Dashboard</title>
-  <script src="https://cdn.jsdelivr.net/npm/chart.js "></script>
-  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css " rel="stylesheet" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet" />
   <style>
     * {
       margin: 0;
@@ -19,8 +19,8 @@
       padding: 20px;
     }
     .container {
-      max-width: 1600px;
-      margin: 0 auto;
+      max-width: calc(100% - 70px);
+      margin-left: 70px;
       background: rgba(255, 255, 255, 0.1);
       backdrop-filter: blur(20px);
       border-radius: 30px;
@@ -68,7 +68,7 @@
       text-shadow: 2px 2px 4px rgba(0, 0, 0, 0);
       position: relative;
       z-index: 1;
-     background: linear-gradient(45deg, #ffd700, #ffcc00);
+      background: linear-gradient(45deg, #ffd700, #ffcc00);
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
       background-clip: text;
@@ -81,45 +81,67 @@
       font-weight: 400;
       letter-spacing: 0.8px;
     }
-.fixed-top-right-link {
-  position: fixed;
-  top: 20px;
-  right: 20px;
-  background: linear-gradient(135deg, #ff6b6b, #ff9f43);
-  color: white;
-  padding: 10px 18px;
-  border-radius: 30px;
-  font-weight: bold;
-  font-size: 14px;
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
-  text-decoration: none;
-  z-index: 9999;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  transition: all 0.3s ease;
-}
-
-.fixed-top-right-link:hover {
-  transform: scale(1.05);
-  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.25);
-}
-
-/* Responsive บนมือถือ */
-@media (max-width: 768px) {
-  .fixed-top-right-link {
-    top: 10px;
-    right: 10px;
-    font-size: 12px;
-    padding: 8px 14px;
-    gap: 6px;
-  }
-
-  .fixed-top-right-link i {
-    font-size: 14px;
-  }
-}
-
+    .sidebar {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 70px;
+      height: 100vh;
+      background: linear-gradient(180deg, #256eff 0%, #6fd0ff 100%);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding-top: 20px;
+      box-shadow: 2px 0 10px rgba(0, 0, 0, 0.2);
+      z-index: 9999;
+      transition: width 0.3s ease;
+    }
+    .sidebar:hover {
+      width: 200px;
+    }
+    .sidebar-item {
+      width: 100%;
+      padding: 15px;
+      display: flex;
+      align-items: center;
+      color: white;
+      text-decoration: none;
+      font-size: 14px;
+      font-weight: 600;
+      transition: all 0.3s ease;
+      position: relative;
+    }
+    .sidebar-item i {
+      font-size: 20px;
+      margin-right: 10px;
+      min-width: 30px;
+      text-align: center;
+    }
+    .sidebar-item span {
+      opacity: 0;
+      transition: opacity 0.3s ease;
+    }
+    .sidebar:hover .sidebar-item span {
+      opacity: 1;
+    }
+    .sidebar-item:hover {
+      background: rgba(255, 255, 255, 0.2);
+      transform: translateX(5px);
+    }
+    .sidebar-item::before {
+      content: '';
+      position: absolute;
+      left: 0;
+      top: 0;
+      bottom: 0;
+      width: 4px;
+      background: linear-gradient(180deg, #ffd700, #ffcc00);
+      opacity: 0;
+      transition: opacity 0.3s ease;
+    }
+    .sidebar-item:hover::before {
+      opacity: 1;
+    }
     .controls {
       padding: 40px 30px;
       background: rgba(255, 255, 255, 0.95);
@@ -412,7 +434,6 @@
       font-weight: 600;
       letter-spacing: 0.5px;
     }
-    /* Responsive Design */
     @media (max-width: 1400px) {
       .meter-filters {
         grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
@@ -420,7 +441,7 @@
     }
     @media (max-width: 1012px) {
       .container {
-        margin: 10px;
+        margin: 10px 10px 10px 70px;
         border-radius: 20px;
       }
       .header h1 {
@@ -468,6 +489,24 @@
         height: 500px;
         padding: 15px;
       }
+      .sidebar {
+        width: 50px;
+      }
+      .sidebar:hover {
+        width: 150px;
+      }
+      .sidebar-item {
+        padding: 10px;
+        font-size: 12px;
+      }
+      .sidebar-item i {
+        font-size: 18px;
+        margin-right: 8px;
+      }
+      .container {
+        margin-left: 50px;
+        max-width: calc(100% - 50px);
+      }
     }
     @media (max-width: 480px) {
       .stats {
@@ -479,10 +518,36 @@
       .chart-title {
         font-size: 1.5em;
       }
+      .sidebar {
+        width: 40px;
+      }
+      .sidebar:hover {
+        width: 120px;
+      }
+      .sidebar-item {
+        padding: 8px;
+      }
+      .sidebar-item i {
+        font-size: 16px;
+      }
+      .container {
+        margin-left: 40px;
+        max-width: calc(100% - 40px);
+      }
     }
   </style>
 </head>
 <body>
+  <div class="sidebar">
+    <a href="index.html" class="sidebar-item">
+      <i class="fas fa-home"></i>
+      <span>Home</span>
+    </a>
+    <a href="MainIncoming.html" class="sidebar-item">
+      <i class="fas fa-network-wired"></i>
+      <span>Main Incoming</span>
+    </a>
+  </div>
   <div class="container">
     <div class="header">
       <h1><i class="fas fa-bolt"></i> Power Monitoring Dashboard</h1>
@@ -567,19 +632,41 @@
       '#EE5A12', '#0984e3', '#6C5CE7', '#A29BFE', '#FD79A8'
     ];
     const originalUrl = 'https://www.dropbox.com/scl/fi/ujzaectxfzcd572a1ehb4/Chiller_Compress_Air.csv?rlkey=0myy02d0l5kfz8xxzkk7s011r&raw=1';
-    const proxyUrl = ' https://corsproxy.io/?' + encodeURIComponent(originalUrl);
+    const proxyUrl = 'https://corsproxy.io/?' + encodeURIComponent(originalUrl);
+
+    const fallbackData = [
+      "Timestamp,BD2_GA90_VSD,BD1_COMP_AIR_GA90_2,BD1_COMP_AIR_GA90_1,CHILLER_1",
+      "01/01/2025 00:00,10.5,12.3,11.8,15.2",
+      "01/01/2025 01:00,10.7,12.5,11.9,15.4",
+      "01/01/2025 02:00,10.8,12.6,12.0,15.6"
+    ].join('\n');
 
     function parseCustomDate(dateStr) {
-      const [datePart, timePart] = dateStr.split(' ');
-      const [day, month, year] = datePart.split('/');
-      return `${year}-${month}-${day}T${timePart}`;
+      try {
+        const [datePart, timePart] = dateStr.split(' ');
+        const [day, month, year] = datePart.split('/');
+        const formattedDate = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}T${timePart}`;
+        const date = new Date(formattedDate);
+        if (isNaN(date.getTime())) throw new Error('Invalid date format');
+        return formattedDate;
+      } catch (error) {
+        console.error('Error parsing date:', dateStr, error);
+        return null;
+      }
     }
 
     function filterLast24Hours(data) {
-      if (!data || data.length === 0) return data;
+      if (!data || data.length === 0) {
+        console.warn('No data to filter');
+        return data;
+      }
 
       try {
         const latestTimestamp = new Date(parseCustomDate(data[data.length - 1][0]));
+        if (isNaN(latestTimestamp.getTime())) {
+          console.warn('Invalid latest timestamp, using all data');
+          return data;
+        }
         const cutoffTime = new Date(latestTimestamp.getTime() - (24 * 60 * 60 * 1000));
 
         const filtered = data.filter(row => {
@@ -589,19 +676,54 @@
 
         return filtered.length > 0 ? filtered : data;
       } catch (error) {
-        console.warn('Error filtering 24-hour data, using all ', error);
+        console.warn('Error filtering 24-hour data, using all data:', error);
         return data;
       }
     }
 
     async function loadData() {
+      const loadingElement = document.getElementById('loading');
+      const chartElement = document.getElementById('myChart');
+
+      const timeout = setTimeout(() => {
+        loadingElement.innerHTML = '<div class="spinner"></div><div class="loading-text">Request timed out. Please try again.</div>';
+      }, 10000);
+
       try {
-        remainingTime = 15 * 60;
-        const response = await fetch(proxyUrl);
-        const csv = await response.text();
+        let csv;
+        try {
+          console.log('Fetching data from:', proxyUrl);
+          const response = await fetch(proxyUrl, { cache: 'no-store' });
+          if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
+          csv = await response.text();
+          console.log('Raw CSV data:', csv.substring(0, 200));
+        } catch (error) {
+          console.warn('Failed to fetch data, using fallback data:', error);
+          csv = fallbackData;
+        }
+
+        if (!csv || csv.trim() === '') {
+          throw new Error('Received empty CSV data');
+        }
+
         const lines = csv.trim().split('\n');
+        if (lines.length < 2) {
+          throw new Error('CSV data is too short or invalid');
+        }
+
         const headers = lines[0].split(',').map(h => h.trim());
-        const data = lines.slice(1).map(line => line.split(','));
+        const data = lines.slice(1).map(line => {
+          const values = line.split(',');
+          if (values.length !== headers.length) {
+            console.warn('Invalid row length:', line);
+            return null;
+          }
+          return values;
+        }).filter(row => row !== null);
+
+        if (data.length === 0) {
+          throw new Error('No valid data rows found');
+        }
 
         rawData = { timestamps: data.map(row => row[0]), headers: headers, data };
 
@@ -636,18 +758,24 @@
         createFilters();
         updateStats();
         createChart();
-        document.getElementById('loading').style.display = 'none';
-        document.getElementById('myChart').style.display = 'block';
+        loadingElement.style.display = 'none';
+        chartElement.style.display = 'block';
+        clearTimeout(timeout);
       } catch (error) {
         console.error('Error loading data:', error);
-        document.getElementById('loading').innerHTML =
-          '<div class="spinner"></div><div class="loading-text">Error loading data. Please try again.</div>';
+        loadingElement.innerHTML =
+          `<div class="spinner"></div><div class="loading-text">Error: ${error.message}. <br>Click <a href="#" onclick="loadData()">here</a> to retry.</div>`;
+        clearTimeout(timeout);
       }
     }
 
     function createFilters() {
       const filtersContainer = document.getElementById('meterFilters');
       filtersContainer.innerHTML = '';
+      if (!filteredData || !filteredData.data || filteredData.data.length === 0) {
+        console.warn('No filtered data for filters');
+        return;
+      }
       const latestData = filteredData.data[filteredData.data.length - 1];
 
       allDatasets.forEach((dataset, index) => {
@@ -681,19 +809,22 @@
     }
 
     function updateChart() {
-      if (!chartInstance) return;
+      if (!chartInstance) {
+        console.warn('Chart instance not found');
+        return;
+      }
       const activeDatasets = [];
       const checkboxes = document.querySelectorAll('input[type="checkbox"]');
-      const latestData = filteredData.data[filteredData.data.length - 1];
+      const latestData = filteredData?.data[filteredData.data.length - 1];
 
       checkboxes.forEach((checkbox, index) => {
-        const value = parseFloat(latestData[index + 1]) || 0;
+        const value = parseFloat(latestData?.[index + 1]) || 0;
         let statusClass = 'status-off';
         if (value > 1) statusClass = 'status-active';
         else if (value > 0.05) statusClass = 'status-standby';
 
         const filterItem = checkbox.parentElement;
-        filterItem.className = 'filter-item ' + statusClass;
+        filterItem.className = `filter-item ${statusClass}`;
 
         if (checkbox.checked) {
           activeDatasets.push(allDatasets[index]);
@@ -706,7 +837,10 @@
     }
 
     function updateStats() {
-      if (!filteredData || filteredData.data.length === 0) return;
+      if (!filteredData || filteredData.data.length === 0) {
+        console.warn('No filtered data for stats');
+        return;
+      }
       const latestData = filteredData.data[filteredData.data.length - 1];
       const totalPower = latestData.slice(1).reduce((sum, val) => sum + (parseFloat(val) || 0), 0);
 
@@ -732,6 +866,10 @@
 
     function animateNumber(elementId, targetValue) {
       const element = document.getElementById(elementId);
+      if (!element) {
+        console.warn(`Element with ID ${elementId} not found`);
+        return;
+      }
       const currentValue = parseFloat(element.textContent) || 0;
       const increment = (targetValue - currentValue) / 30;
       let current = currentValue;
@@ -746,13 +884,17 @@
     }
 
     function createChart() {
-      const ctx = document.getElementById('myChart').getContext('2d');
+      const ctx = document.getElementById('myChart')?.getContext('2d');
+      if (!ctx) {
+        console.error('Canvas context not found');
+        return;
+      }
       if (chartInstance) chartInstance.destroy();
 
       chartInstance = new Chart(ctx, {
         type: 'line',
         data: {
-          labels: filteredData.timestamps,
+          labels: filteredData?.timestamps || [],
           datasets: allDatasets
         },
         options: {
@@ -871,7 +1013,10 @@
     }
 
     function exportCSV() {
-      if (!rawData) return;
+      if (!rawData) {
+        console.warn('No raw data to export');
+        return;
+      }
       const activeColumns = [0];
       const checkboxes = document.querySelectorAll('input[type="checkbox"]');
       checkboxes.forEach((cb, index) => {
@@ -898,7 +1043,10 @@
     }
 
     function exportJPEG() {
-      if (!chartInstance) return;
+      if (!chartInstance) {
+        console.warn('No chart instance to export');
+        return;
+      }
       const canvas = document.createElement('canvas');
       const ctx = canvas.getContext('2d');
       const chartCanvas = chartInstance.canvas;
@@ -927,25 +1075,26 @@
     function updateCountdown() {
       const minutes = Math.floor(remainingTime / 60);
       const seconds = remainingTime % 60;
-      document.getElementById('countdown').textContent =
-        `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+      const countdownElement = document.getElementById('countdown');
+      if (countdownElement) {
+        countdownElement.textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+      }
       remainingTime--;
       if (remainingTime < 0) remainingTime = 15 * 60;
     }
 
     document.addEventListener('DOMContentLoaded', function () {
+      console.log('DOM loaded, starting data load');
       document.body.style.opacity = '0';
       setTimeout(() => {
         document.body.style.transition = 'opacity 0.5s ease';
         document.body.style.opacity = '1';
       }, 100);
       loadData().then(() => {
+        console.log('Data loaded successfully, starting auto refresh');
         startAutoRefresh();
       });
     });
   </script>
-<a href="MainIncoming.html" class="fixed-top-right-link">
-  <i class="fas fa-network-wired"></i> Main Incoming
-</a>
 </body>
 </html>
