@@ -251,7 +251,7 @@
     }
     .filter-item.status-active::before {
       background: linear-gradient(135deg, #4caf50, #8bc34a);
-      box-shadow: 0 0 15px rgba(76, 175, 80, 0.3);
+      box-shadow: 0 0.3);
     }
     .filter-item.status-standby::before {
       background: linear-gradient(135deg, #ff9800, #ffc107);
@@ -374,11 +374,23 @@
       color: white;
       box-shadow: 0 5px 20px rgba(108, 117, 125, 0.3);
     }
-    .btn:hover {
+    /* Custom style for Deselect All button (Red tone) */
+    .btn-deselect-all {
+      background: linear-gradient(135deg, #e63946, #f25c68);
+      color: white;
+      box-shadow: 0 5px 20px rgba(230, 57, 70, 0.3);
+    }
+    /* Custom style for Expand Data button (Pink tone) */
+    .btn-expand-data {
+      background: linear-gradient(135deg, #ff6b9b, #ff99cc);
+      color: white;
+      box-shadow: 0 5px 20px rgba(255, 107, 155, 0.3);
+    }
+    .btn:hover, .btn-deselect-all:hover, .btn-expand-data:hover {
       transform: translateY(-3px);
       box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
     }
-    .btn:active {
+    .btn:active, .btn-deselect-all:active, .btn-expand-data:active {
       transform: translateY(-1px);
     }
     .chart-container {
@@ -407,6 +419,10 @@
       padding: 30px;
       box-shadow: inset 0 5px 20px rgba(0, 0, 0, 0.05);
       border: 1px solid rgba(37, 111, 255, 0.1);
+    }
+    #totalChartWrapper {
+      height: 500px;
+      margin-top: 40px;
     }
     .loading {
       display: flex;
@@ -456,6 +472,9 @@
         height: 600px;
         padding: 20px;
       }
+      #totalChartWrapper {
+        height: 450px;
+      }
     }
     @media (max-width: 768px) {
       body {
@@ -490,6 +509,9 @@
         height: 500px;
         padding: 15px;
       }
+      #totalChartWrapper {
+        height: 400px;
+      }
       .sidebar {
         width: 35px;
       }
@@ -518,6 +540,12 @@
       }
       .chart-title {
         font-size: 1.5em;
+      }
+      .chart-wrapper {
+        height: 400px;
+      }
+      #totalChartWrapper {
+        height: 350px;
       }
       .sidebar {
         width: 30px;
@@ -595,7 +623,7 @@
         <button class="btn btn-primary" onclick="selectAll()">
           <i class="fas fa-check-double"></i> Select All
         </button>
-        <button class="btn btn-primary" onclick="deselectAll()">
+        <button class="btn btn-deselect-all" onclick="deselectAll()">
           <i class="fas fa-times"></i> Deselect All
         </button>
         <button class="btn btn-warning" onclick="selectBuilding1()">
@@ -613,6 +641,9 @@
         <button class="btn btn-info" onclick="exportJPEG()">
           <i class="fas fa-image"></i> Export JPEG
         </button>
+        <button class="btn btn-expand-data" onclick="toggleTotalChart()">
+          <i class="fas fa-expand"></i> Expand Data
+        </button>
       </div>
     </div>
     <div class="chart-container">
@@ -626,30 +657,37 @@
         </div>
         <canvas id="myChart" style="display: none;"></canvas>
       </div>
+      <div class="chart-wrapper" id="totalChartWrapper" style="display: none;">
+        <div class="chart-header">
+          <div class="chart-title">Total Power Metrics</div>
+        </div>
+        <canvas id="totalChart"></canvas>
+      </div>
     </div>
   </div>
 
   <script>
     let chartInstance = null;
+    let totalChartInstance = null;
     let rawData = null;
     let allDatasets = [];
     let filteredData = null;
     let refreshInterval = null;
     let countdownInterval = null;
     let remainingTime = 15 * 60;
+    let isTotalChartVisible = false;
     const colors = [
       '#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FECA57',
       '#FF9FF3', '#54A0FF', '#5F27CD', '#00D2D3', '#FF9F43',
       '#EE5A12', '#0984e3', '#6C5CE7', '#A29BFE', '#FD79A8'
     ];
-    const originalUrl = 'https://www.dropbox.com/scl/fi/7oh80bsupojeuw8s7x1nm/Main-Incoming.csv?rlkey=mdm9rwuvutyrfjyz7zmiq87ht&raw=1';
-    const proxyUrl = 'https://corsproxy.io/?' + encodeURIComponent(originalUrl);
-
     const buildingGroups = {
       building1: ['BD1_TR1_MAIN', 'BD1_TR2_MAIN', 'BD1_TR3_MAIN'],
       building2: ['BD2_TR1_MAIN', 'BD2_TR2_MAIN', 'BD2_TR3_MAIN'],
       building3: ['BD3_TR_MAIN']
     };
+    const originalUrl = 'https://www.dropbox.com/scl/fi/7oh80bsupojeuw8s7x1nm/Main-Incoming.csv?rlkey=mdm9rwuvutyrfjyz7zmiq87ht&raw=1';
+    const proxyUrl = 'https://corsproxy.io/?' + encodeURIComponent(originalUrl);
 
     const fallbackData = [
       "Timestamp,BD1_TR1_MAIN,BD1_TR2_MAIN,BD1_TR3_MAIN,BD2_TR1_MAIN,BD2_TR2_MAIN,BD2_TR3_MAIN,BD3_TR_MAIN",
@@ -786,6 +824,9 @@
         createFilters();
         updateStats();
         createChart();
+        if (isTotalChartVisible) {
+          createTotalChart();
+        }
         loadingElement.style.display = 'none';
         chartElement.style.display = 'block';
         clearTimeout(timeout);
@@ -863,6 +904,9 @@
       chartInstance.data.datasets = activeDatasets;
       chartInstance.update('none');
       updateStats();
+      if (isTotalChartVisible && totalChartInstance) {
+        createTotalChart();
+      }
     }
 
     function updateStats() {
@@ -1014,6 +1058,221 @@
       });
     }
 
+    function calculateTotalData() {
+      if (!filteredData || !filteredData.data) {
+        console.warn('No filtered data for total chart');
+        return {
+          building1Total: [],
+          building2Total: [],
+          building3Total: [],
+          currentTotal: []
+        };
+      }
+
+      const building1Total = [];
+      const building2Total = [];
+      const building3Total = [];
+      const currentTotal = [];
+
+      filteredData.data.forEach(row => {
+        let b1Total = 0;
+        let b2Total = 0;
+        let b3Total = 0;
+        for (let i = 1; i < filteredData.headers.length; i++) {
+          const headerName = filteredData.headers[i].trim();
+          const value = parseFloat(row[i]) || 0;
+          if (buildingGroups.building1.includes(headerName)) {
+            b1Total += value;
+          } else if (buildingGroups.building2.includes(headerName)) {
+            b2Total += value;
+          } else if (buildingGroups.building3.includes(headerName)) {
+            b3Total += value;
+          }
+        }
+        building1Total.push(b1Total.toFixed(1));
+        building2Total.push(b2Total.toFixed(1));
+        building3Total.push(b3Total.toFixed(1));
+        currentTotal.push((b1Total + b2Total + b3Total).toFixed(1));
+      });
+
+      return { building1Total, building2Total, building3Total, currentTotal };
+    }
+
+    function createTotalChart() {
+      const ctx = document.getElementById('totalChart')?.getContext('2d');
+      if (!ctx) {
+        console.error('Total chart canvas context not found');
+        return;
+      }
+      if (totalChartInstance) totalChartInstance.destroy();
+
+      const { building1Total, building2Total, building3Total, currentTotal } = calculateTotalData();
+
+      totalChartInstance = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: filteredData?.timestamps || [],
+          datasets: [
+            {
+              label: 'Total Power Building 1 (kW)',
+              data: building1Total,
+              borderColor: '#FF6B6B',
+              backgroundColor: '#FF6B6B20',
+              borderWidth: 3,
+              fill: false,
+              tension: 0.4,
+              pointRadius: 0,
+              pointHoverRadius: 6,
+              pointHoverBackgroundColor: '#FF6B6B',
+              pointHoverBorderColor: '#fff',
+              pointHoverBorderWidth: 3
+            },
+            {
+              label: 'Total Power Building 2 (kW)',
+              data: building2Total,
+              borderColor: '#4ECDC4',
+              backgroundColor: '#4ECDC420',
+              borderWidth: 3,
+              fill: false,
+              tension: 0.4,
+              pointRadius: 0,
+              pointHoverRadius: 6,
+              pointHoverBackgroundColor: '#4ECDC4',
+              pointHoverBorderColor: '#fff',
+              pointHoverBorderWidth: 3
+            },
+            {
+              label: 'Total Power Building 3 (kW)',
+              data: building3Total,
+              borderColor: '#45B7D1',
+              backgroundColor: '#45B7D120',
+              borderWidth: 3,
+              fill: false,
+              tension: 0.4,
+              pointRadius: 0,
+              pointHoverRadius: 6,
+              pointHoverBackgroundColor: '#45B7D1',
+              pointHoverBorderColor: '#fff',
+              pointHoverBorderWidth: 3
+            },
+            {
+              label: 'Current Total (kW)',
+              data: currentTotal,
+              borderColor: '#96CEB4',
+              backgroundColor: '#96CEB420',
+              borderWidth: 3,
+              fill: false,
+              tension: 0.4,
+              pointRadius: 0,
+              pointHoverRadius: 6,
+              pointHoverBackgroundColor: '#96CEB4',
+              pointHoverBorderColor: '#fff',
+              pointHoverBorderWidth: 3
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: {
+              position: 'top',
+              labels: {
+                boxWidth: 12,
+                padding: 20,
+                usePointStyle: true,
+                font: { size: 13, weight: '600' },
+                color: '#495057'
+              }
+            },
+            tooltip: {
+              mode: 'index',
+              intersect: false,
+              backgroundColor: 'rgba(0, 0, 0, 0.9)',
+              titleColor: '#fff',
+              bodyColor: '#fff',
+              borderColor: '#667eea',
+              borderWidth: 2,
+              cornerRadius: 12,
+              displayColors: true,
+              padding: 15,
+              titleFont: { size: 14, weight: 'bold' },
+              bodyFont: { size: 13 }
+            }
+          },
+          scales: {
+            x: {
+              display: true,
+              title: {
+                display: true,
+                text: 'Time (Last 24 Hours)',
+                font: { size: 15, weight: 'bold' },
+                color: '#495057'
+              },
+              ticks: {
+                maxTicksLimit: 24,
+                autoSkip: true,
+                font: { size: 12 },
+                color: '#6c757d'
+              },
+              grid: {
+                color: 'rgba(0, 0, 0, 0.05)',
+                drawBorder: false
+              }
+            },
+            y: {
+              display: true,
+              title: {
+                display: true,
+                text: 'Power (kW)',
+                font: { size: 15, weight: 'bold' },
+                color: '#495057'
+              },
+              ticks: {
+                font: { size: 12 },
+                color: '#6c757d'
+              },
+              grid: {
+                color: 'rgba(0, 0, 0, 0.05)',
+                drawBorder: false
+              }
+            }
+          },
+          interaction: {
+            mode: 'nearest',
+            axis: 'x',
+            intersect: false
+          },
+          animation: {
+            duration: 1500,
+            easing: 'easeInOutQuart'
+          },
+          elements: {
+            line: {
+              borderJoinStyle: 'round'
+            }
+          }
+        }
+      });
+    }
+
+    function toggleTotalChart() {
+      const totalChartWrapper = document.getElementById('totalChartWrapper');
+      const expandButton = document.querySelector('button[onclick="toggleTotalChart()"]');
+      isTotalChartVisible = !isTotalChartVisible;
+
+      if (isTotalChartVisible) {
+        totalChartWrapper.style.display = 'block';
+        expandButton.innerHTML = '<i class="fas fa-compress"></i> Collapse Data';
+        if (!totalChartInstance) {
+          createTotalChart();
+        }
+      } else {
+        totalChartWrapper.style.display = 'none';
+        expandButton.innerHTML = '<i class="fas fa-expand"></i> Expand Data';
+      }
+    }
+
     function selectAll() {
       const checkboxes = document.querySelectorAll('input[type="checkbox"]');
       checkboxes.forEach(cb => cb.checked = true);
@@ -1083,24 +1342,51 @@
 
     function exportJPEG() {
       if (!chartInstance) {
-        console.warn('No chart instance to export');
-        alert('No chart available to export.');
+        console.warn('No main chart instance to export');
+        alert('No main chart available to export.');
         return;
       }
-      const canvas = document.createElement('canvas');
-      const ctx = canvas.getContext('2d');
-      const chartCanvas = chartInstance.canvas;
+
+      const date = new Date().toISOString().split('T')[0];
+
+      // Export main chart
+      let canvas = document.createElement('canvas');
+      let ctx = canvas.getContext('2d');
+      const mainChartCanvas = chartInstance.canvas;
       const scale = 2;
-      canvas.width = chartCanvas.width * scale;
-      canvas.height = chartCanvas.height * scale;
+      canvas.width = mainChartCanvas.width * scale;
+      canvas.height = mainChartCanvas.height * scale;
       ctx.scale(scale, scale);
       ctx.fillStyle = 'white';
       ctx.fillRect(0, 0, canvas.width, canvas.height);
-      ctx.drawImage(chartCanvas, 0, 0);
-      const link = document.createElement('a');
-      link.download = `power_chart_${new Date().toISOString().split('T')[0]}.jpg`;
+      ctx.drawImage(mainChartCanvas, 0, 0);
+      let link = document.createElement('a');
+      link.download = `power_chart_${date}.jpg`;
       link.href = canvas.toDataURL('image/jpeg', 0.95);
+      link.style.visibility = 'hidden';
+      document.body.appendChild(link);
       link.click();
+      document.body.removeChild(link);
+
+      // Export total chart if visible
+      if (isTotalChartVisible && totalChartInstance) {
+        canvas = document.createElement('canvas');
+        ctx = canvas.getContext('2d');
+        const totalChartCanvas = totalChartInstance.canvas;
+        canvas.width = totalChartCanvas.width * scale;
+        canvas.height = totalChartCanvas.height * scale;
+        ctx.scale(scale, scale);
+        ctx.fillStyle = 'white';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.drawImage(totalChartCanvas, 0, 0);
+        link = document.createElement('a');
+        link.download = `total_power_chart_${date}.jpg`;
+        link.href = canvas.toDataURL('image/jpeg', 0.95);
+        link.style.visibility = 'hidden';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+      }
     }
 
     function startAutoRefresh() {
