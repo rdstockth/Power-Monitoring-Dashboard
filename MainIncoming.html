@@ -4,8 +4,12 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Main Incoming Power Dashboard</title>
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet" />
+ <!-- Font Awesome แบบ preload + defer -->
+  <link rel="preload" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" as="style" onload="this.onload=null;this.rel='stylesheet'">
+   <noscript><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css"></noscript>
+
+  <!-- Chart.js แบบ defer -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js" defer></script>
   <style>
     * {
       margin: 0;
@@ -564,6 +568,13 @@
         max-width: calc(100% - 30px);
       }
     }
+/* ป้องกันการเลือกข้อความ */
+    body {
+      -webkit-user-select: none; /* Safari */
+      -moz-user-select: none;    /* Firefox */
+      -ms-user-select: none;     /* IE/Edge */
+      user-select: none;         /* มาตรฐาน */
+    }
   </style>
 </head>
 <body>
@@ -574,13 +585,13 @@
     </a>
     <a href="MainIncoming.html" class="sidebar-item">
       <i class="fas fa-network-wired"></i>
-      <span>Main Incoming</span>
+      <span>Main Incoming</span> 
     </a>
   </div>
   <div class="container">
     <div class="header">
-      <h1><i class="fas fa-bolt"></i> Main Incoming Power Dashboard</h1>
-      <p>Building 1, Building 2, and Building 3 Real-time Analytics</p>
+      <h1><i class="fas fa-bolt"></i> Power Monitoring Dashboard</h1>
+      <p>Main Incoming Power Analytics</p>
     </div>
     <div class="controls">
       <div class="stats" id="statsContainer">
@@ -610,7 +621,7 @@
             <i class="fas fa-chart-line"></i>
           </div>
           <div class="stat-number" id="totalPower">0</div>
-          <div class="stat-label">Current Total (kW)</div>
+          <div class="stat-label">Total Power All Building (kW)</div>
         </div>
       </div>
       <div class="control-group">
@@ -638,7 +649,7 @@
         <button class="btn btn-success" onclick="exportCSV()">
           <i class="fas fa-file-csv"></i> Export CSV
         </button>
-        <button class="btn btn-info" onclick="exportJPEG()">
+        <button class="btn btn-info" onclick="exportPNG()">
           <i class="fas fa-image"></i> Export JPEG
         </button>
         <button class="btn btn-expand-data" onclick="toggleTotalChart()">
@@ -648,7 +659,7 @@
     </div>
     <div class="chart-container">
       <div class="chart-header">
-        <div class="chart-title">Main Incoming Power Usage Monitoring</div>
+        <div class="chart-title">Power Monitoring</div>
       </div>
       <div class="chart-wrapper">
         <div class="loading" id="loading">
@@ -686,8 +697,7 @@
       building2: ['BD2_TR1_MAIN', 'BD2_TR2_MAIN', 'BD2_TR3_MAIN'],
       building3: ['BD3_TR_MAIN']
     };
-    const originalUrl = 'https://www.dropbox.com/scl/fi/7oh80bsupojeuw8s7x1nm/Main-Incoming.csv?rlkey=mdm9rwuvutyrfjyz7zmiq87ht&raw=1';
-    const proxyUrl = 'https://corsproxy.io/?' + encodeURIComponent(originalUrl);
+   
 
     const fallbackData = [
       "Timestamp,BD1_TR1_MAIN,BD1_TR2_MAIN,BD1_TR3_MAIN,BD2_TR1_MAIN,BD2_TR2_MAIN,BD2_TR3_MAIN,BD3_TR_MAIN",
@@ -738,29 +748,50 @@
       }
     }
 
-    async function loadData() {
-      const loadingElement = document.getElementById('loading');
-      const chartElement = document.getElementById('myChart');
+    // ▼▼▼ วางโค้ดใหม่นี้แทนที่ของเดิม ▼▼▼
+async function loadData() {
+    const loadingElement = document.getElementById('loading');
+    const chartElement = document.getElementById('myChart');
+    loadingElement.innerHTML = '<div class="spinner"></div><div class="loading-text">Loading data...</div>';
 
-      loadingElement.innerHTML = '<div class="spinner"></div><div class="loading-text">Loading data...</div>';
+    // URL ของข้อมูลดิบ
+    const originalUrl = 'https://www.dropbox.com/scl/fi/7oh80bsupojeuw8s7x1nm/Main-Incoming.csv?rlkey=mdm9rwuvutyrfjyz7zmiq87ht&raw=1';
 
-      const timeout = setTimeout(() => {
-        loadingElement.innerHTML = '<div class="spinner"></div><div class="loading-text">Request timed out. Please try again.</div>';
-      }, 10000);
+    // 1. สร้างรายการ CORS Proxies สำรอง
+    const proxyUrls = [
+        'https://corsproxy.io/?',
+        'https://api.allorigins.win/raw?url=', // แหล่งสำรอง
+    ];
 
-      try {
-        let csv;
+    let csv = null;
+    let successfulProxy = null;
+
+    // 2. วน Loop เพื่อลองใช้แต่ละ Proxy
+    for (const proxy of proxyUrls) {
+        const fullUrl = proxy + encodeURIComponent(originalUrl);
         try {
-          console.log('Fetching data from:', proxyUrl);
-          const response = await fetch(proxyUrl, { cache: 'no-store' });
-          if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
-          csv = await response.text();
-          console.log('Raw CSV data (first 200 chars):', csv.substring(0, 200));
+            console.log(`Trying to fetch data from: ${fullUrl}`);
+            const response = await fetch(fullUrl, { cache: 'no-store', signal: AbortSignal.timeout(8000) }); // เพิ่ม timeout 8 วินาที
+            if (!response.ok) {
+                throw new Error(`HTTP error! Status: ${response.status}`);
+            }
+            csv = await response.text();
+            successfulProxy = proxy;
+            console.log(`Successfully fetched data using: ${successfulProxy}`);
+            break; // 3. ถ้าสำเร็จ ให้ออกจาก Loop ทันที
         } catch (error) {
-          console.warn('Failed to fetch data, using fallback data:', error);
-          csv = fallbackData;
+            console.warn(`Failed to fetch from ${proxy}. Error:`, error.message, 'Trying next proxy...');
         }
+    }
 
+    // หากลองทุก Proxy แล้วยังไม่ได้ข้อมูล ให้ใช้ Fallback Data
+    if (!csv) {
+        console.warn('All proxies failed. Using fallback data.');
+        csv = fallbackData;
+    }
+
+    // โค้ดส่วนที่เหลือในการประมวลผล CSV จะเหมือนเดิม
+    try {
         if (!csv || csv.trim() === '') {
           throw new Error('Received empty CSV data');
         }
@@ -829,14 +860,14 @@
         }
         loadingElement.style.display = 'none';
         chartElement.style.display = 'block';
-        clearTimeout(timeout);
-      } catch (error) {
-        console.error('Error loading data:', error);
+
+    } catch (error) {
+        // 4. จัดการกรณีล้มเหลวทั้งหมด
+        console.error('Error loading data after all fallbacks:', error);
         loadingElement.innerHTML =
-          `<div class="spinner"></div><div class="loading-text">Error: ${error.message}. <br>Click <a href="#" onclick="loadData()">here</a> to retry.</div>`;
-        clearTimeout(timeout);
-      }
+          `<div class="spinner"></div><div class="loading-text">Error: ${error.message}. <br>Unable to load data from all sources.</div>`;
     }
+}
 
     function createFilters() {
       const filtersContainer = document.getElementById('meterFilters');
@@ -974,6 +1005,7 @@
           datasets: allDatasets
         },
         options: {
+          devicePixelRatio: 3, // เพิ่มความละเอียดในการวาดกราฟ
           responsive: true,
           maintainAspectRatio: false,
           plugins: {
@@ -1114,7 +1146,7 @@
           labels: filteredData?.timestamps || [],
           datasets: [
             {
-              label: 'Total Power Building 1 (kW)',
+              label: 'Total Power Building 1',
               data: building1Total,
               borderColor: '#FF6B6B',
               backgroundColor: '#FF6B6B20',
@@ -1128,7 +1160,7 @@
               pointHoverBorderWidth: 3
             },
             {
-              label: 'Total Power Building 2 (kW)',
+              label: 'Total Power Building 2',
               data: building2Total,
               borderColor: '#4ECDC4',
               backgroundColor: '#4ECDC420',
@@ -1142,7 +1174,7 @@
               pointHoverBorderWidth: 3
             },
             {
-              label: 'Total Power Building 3 (kW)',
+              label: 'Total Power Building 3',
               data: building3Total,
               borderColor: '#45B7D1',
               backgroundColor: '#45B7D120',
@@ -1156,7 +1188,7 @@
               pointHoverBorderWidth: 3
             },
             {
-              label: 'Current Total (kW)',
+              label: 'Total Power All Building',
               data: currentTotal,
               borderColor: '#96CEB4',
               backgroundColor: '#96CEB420',
@@ -1172,6 +1204,7 @@
           ]
         },
         options: {
+          devicePixelRatio: 3, // เพิ่มความละเอียดในการวาดกราฟ
           responsive: true,
           maintainAspectRatio: false,
           plugins: {
@@ -1340,54 +1373,64 @@
       document.body.removeChild(link);
     }
 
-    function exportJPEG() {
-      if (!chartInstance) {
-        console.warn('No main chart instance to export');
-        alert('No main chart available to export.');
-        return;
-      }
+   function exportPNG() {
+  if (!chartInstance) {
+    console.warn('No main chart instance to export');
+    alert('No main chart available to export.');
+    return;
+  }
+  const date = new Date().toISOString().split('T')[0];
 
-      const date = new Date().toISOString().split('T')[0];
+  // Export main chart
+  const scale = 1; // เพิ่ม scale เพื่อให้ภาพคมชัดขึ้น
+  let canvas = document.createElement('canvas');
+  let ctx = canvas.getContext('2d');
+  const mainChartCanvas = chartInstance.canvas;
+  canvas.width = mainChartCanvas.width * scale;
+  canvas.height = mainChartCanvas.height * scale;
+  ctx.scale(scale, scale);
 
-      // Export main chart
-      let canvas = document.createElement('canvas');
-      let ctx = canvas.getContext('2d');
-      const mainChartCanvas = chartInstance.canvas;
-      const scale = 2;
-      canvas.width = mainChartCanvas.width * scale;
-      canvas.height = mainChartCanvas.height * scale;
-      ctx.scale(scale, scale);
-      ctx.fillStyle = 'white';
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
-      ctx.drawImage(mainChartCanvas, 0, 0);
-      let link = document.createElement('a');
-      link.download = `power_chart_${date}.jpg`;
-      link.href = canvas.toDataURL('image/jpeg', 0.95);
-      link.style.visibility = 'hidden';
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
+  // กำหนดพื้นหลังเป็นสีขาว
+  ctx.fillStyle = 'white';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-      // Export total chart if visible
-      if (isTotalChartVisible && totalChartInstance) {
-        canvas = document.createElement('canvas');
-        ctx = canvas.getContext('2d');
-        const totalChartCanvas = totalChartInstance.canvas;
-        canvas.width = totalChartCanvas.width * scale;
-        canvas.height = totalChartCanvas.height * scale;
-        ctx.scale(scale, scale);
-        ctx.fillStyle = 'white';
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
-        ctx.drawImage(totalChartCanvas, 0, 0);
-        link = document.createElement('a');
-        link.download = `total_power_chart_${date}.jpg`;
-        link.href = canvas.toDataURL('image/jpeg', 0.95);
-        link.style.visibility = 'hidden';
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-      }
-    }
+  // วาดรูปกราฟลงบน canvas
+  ctx.drawImage(mainChartCanvas, 0, 0);
+
+  // สร้างลิงก์ดาวน์โหลด
+  let link = document.createElement('a');
+  link.download = `power_chart_${date}.png`;
+  link.href = canvas.toDataURL('image/png'); // ใช้ PNG
+  link.style.visibility = 'hidden';
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+
+  // Export total chart หากเปิดอยู่
+  if (isTotalChartVisible && totalChartInstance) {
+    canvas = document.createElement('canvas');
+    ctx = canvas.getContext('2d');
+    const totalChartCanvas = totalChartInstance.canvas;
+    canvas.width = totalChartCanvas.width * scale;
+    canvas.height = totalChartCanvas.height * scale;
+    ctx.scale(scale, scale);
+
+    // พื้นหลังสีขาว
+    ctx.fillStyle = 'white';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    ctx.drawImage(totalChartCanvas, 0, 0);
+
+    link = document.createElement('a');
+    link.download = `total_power_chart_${date}.png`;
+    link.href = canvas.toDataURL('image/png');
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  }
+}
+
 
     function startAutoRefresh() {
       if (refreshInterval) clearInterval(refreshInterval);
@@ -1425,6 +1468,18 @@
         loadingElement.innerHTML =
           `<div class="spinner"></div><div class="loading-text">Error: ${error.message}. <br>Click <a href="#" onclick="loadData()">here</a> to retry.</div>`;
       });
+    });
+
+// ป้องกันการคลิกขวา
+    document.addEventListener("contextmenu", function(e) {
+      e.preventDefault();
+    });
+
+    // ป้องกันการกด Ctrl+C, Ctrl+X, Ctrl+U, Ctrl+S, Ctrl+P
+    document.addEventListener("keydown", function(e) {
+      if ((e.ctrlKey && ['c', 'x', 'u', 's', 'p'].includes(e.key.toLowerCase())) || e.key === "F12") {
+        e.preventDefault();
+      }
     });
   </script>
 </body>
