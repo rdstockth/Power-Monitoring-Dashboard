@@ -4,9 +4,9 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Main Incoming Power Dashboard</title>
- <!-- Font Awesome แบบ preload + defer -->
+  <!-- Font Awesome แบบ preload + defer -->
   <link rel="preload" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" as="style" onload="this.onload=null;this.rel='stylesheet'">
-   <noscript><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css"></noscript>
+  <noscript><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css"></noscript>
 
   <!-- Chart.js แบบ defer -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js" defer></script>
@@ -98,7 +98,7 @@
       padding-top: 10px;
       box-shadow: 2px 0 5px rgba(0, 0, 0, 0.1);
       z-index: 9999;
-      transition: width 0.3s ease;
+      transition: width 0.5s ease;
     }
     .sidebar:hover {
       width: 120px;
@@ -112,7 +112,7 @@
       text-decoration: none;
       font-size: 12px;
       font-weight: 500;
-      transition: all 0.3s ease;
+      transition: all 0.5s ease;
       position: relative;
     }
     .sidebar-item i {
@@ -123,7 +123,7 @@
     }
     .sidebar-item span {
       opacity: 0;
-      transition: opacity 0.3s ease;
+      transition: opacity 0.5s ease;
     }
     .sidebar:hover .sidebar-item span {
       opacity: 1;
@@ -141,7 +141,7 @@
       width: 3px;
       background: linear-gradient(180deg, #ffd700, #ffcc00);
       opacity: 0;
-      transition: opacity 0.3s ease;
+      transition: opacity 0.5s ease;
     }
     .sidebar-item:hover::before {
       opacity: 1;
@@ -156,7 +156,7 @@
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
       gap: 25px;
-      margin-bottom: 40px;
+      margin-bottom: 30px;
     }
     .stat-card {
       background: linear-gradient(135deg, #fff 0%, #f8f9fa 100%);
@@ -236,7 +236,7 @@
       background: linear-gradient(135deg, #fff 0%, #f8f9fa 100%);
       border-radius: 15px;
       box-shadow: 0 5px 20px rgba(0, 0, 0, 0.08);
-      transition: all 0.3s ease;
+      transition: all 0.5s ease;
       min-height: 60px;
       position: relative;
       border: 2px solid transparent;
@@ -251,11 +251,11 @@
       width: 6px;
       border-radius: 15px 0 0 15px;
       background-color: #e0e0e0;
-      transition: all 0.3s ease;
+      transition: all 0.5s ease;
     }
     .filter-item.status-active::before {
       background: linear-gradient(135deg, #4caf50, #8bc34a);
-      box-shadow: 0 0.3);
+      box-shadow: 0 0 15px rgba(76, 175, 80, 0.3);
     }
     .filter-item.status-standby::before {
       background: linear-gradient(135deg, #ff9800, #ffc107);
@@ -283,7 +283,7 @@
       font-size: 15px;
       font-weight: 600;
       color: #495057;
-      transition: color 0.3s ease;
+      transition: color 0.5s ease;
     }
     .filter-item:hover label {
       color: #256eff;
@@ -378,13 +378,11 @@
       color: white;
       box-shadow: 0 5px 20px rgba(108, 117, 125, 0.3);
     }
-    /* Custom style for Deselect All button (Red tone) */
     .btn-deselect-all {
       background: linear-gradient(135deg, #e63946, #f25c68);
       color: white;
       box-shadow: 0 5px 20px rgba(230, 57, 70, 0.3);
     }
-    /* Custom style for Expand Data button (Pink tone) */
     .btn-expand-data {
       background: linear-gradient(135deg, #ff6b9b, #ff99cc);
       color: white;
@@ -568,12 +566,11 @@
         max-width: calc(100% - 30px);
       }
     }
-/* ป้องกันการเลือกข้อความ */
     body {
-      -webkit-user-select: none; /* Safari */
-      -moz-user-select: none;    /* Firefox */
-      -ms-user-select: none;     /* IE/Edge */
-      user-select: none;         /* มาตรฐาน */
+      -webkit-user-select: none;
+      -moz-user-select: none;
+      -ms-user-select: none;
+      user-select: none;
     }
   </style>
 </head>
@@ -697,7 +694,6 @@
       building2: ['BD2_TR1_MAIN', 'BD2_TR2_MAIN', 'BD2_TR3_MAIN'],
       building3: ['BD3_TR_MAIN']
     };
-   
 
     const fallbackData = [
       "Timestamp,BD1_TR1_MAIN,BD1_TR2_MAIN,BD1_TR3_MAIN,BD2_TR1_MAIN,BD2_TR2_MAIN,BD2_TR3_MAIN,BD3_TR_MAIN",
@@ -748,50 +744,44 @@
       }
     }
 
-    // ▼▼▼ วางโค้ดใหม่นี้แทนที่ของเดิม ▼▼▼
-async function loadData() {
-    const loadingElement = document.getElementById('loading');
-    const chartElement = document.getElementById('myChart');
-    loadingElement.innerHTML = '<div class="spinner"></div><div class="loading-text">Loading data...</div>';
+    async function loadData() {
+      const loadingElement = document.getElementById('loading');
+      const chartElement = document.getElementById('myChart');
+      loadingElement.innerHTML = '<div class="spinner"></div><div class="loading-text">Loading data...</div>';
 
-    // URL ของข้อมูลดิบ
-    const originalUrl = 'https://www.dropbox.com/scl/fi/7oh80bsupojeuw8s7x1nm/Main-Incoming.csv?rlkey=mdm9rwuvutyrfjyz7zmiq87ht&raw=1';
+      const originalUrl = 'https://www.dropbox.com/scl/fi/7oh80bsupojeuw8s7x1nm/Main-Incoming.csv?rlkey=mdm9rwuvutyrfjyz7zmiq87ht&raw=1';
 
-    // 1. สร้างรายการ CORS Proxies สำรอง
-    const proxyUrls = [
+      const proxyUrls = [
         'https://corsproxy.io/?',
-        'https://api.allorigins.win/raw?url=', // แหล่งสำรอง
-    ];
+        'https://api.allorigins.win/raw?url='
+      ];
 
-    let csv = null;
-    let successfulProxy = null;
+      let csv = null;
+      let successfulProxy = null;
 
-    // 2. วน Loop เพื่อลองใช้แต่ละ Proxy
-    for (const proxy of proxyUrls) {
+      for (const proxy of proxyUrls) {
         const fullUrl = proxy + encodeURIComponent(originalUrl);
         try {
-            console.log(`Trying to fetch data from: ${fullUrl}`);
-            const response = await fetch(fullUrl, { cache: 'no-store', signal: AbortSignal.timeout(8000) }); // เพิ่ม timeout 8 วินาที
-            if (!response.ok) {
-                throw new Error(`HTTP error! Status: ${response.status}`);
-            }
-            csv = await response.text();
-            successfulProxy = proxy;
-            console.log(`Successfully fetched data using: ${successfulProxy}`);
-            break; // 3. ถ้าสำเร็จ ให้ออกจาก Loop ทันที
+          console.log(`Trying to fetch data from: ${fullUrl}`);
+          const response = await fetch(fullUrl, { cache: 'no-store', signal: AbortSignal.timeout(8000) });
+          if (!response.ok) {
+            throw new Error(`HTTP error! Status: ${response.status}`);
+          }
+          csv = await response.text();
+          successfulProxy = proxy;
+          console.log(`Successfully fetched data using: ${successfulProxy}`);
+          break;
         } catch (error) {
-            console.warn(`Failed to fetch from ${proxy}. Error:`, error.message, 'Trying next proxy...');
+          console.warn(`Failed to fetch from ${proxy}. Error:`, error.message, 'Trying next proxy...');
         }
-    }
+      }
 
-    // หากลองทุก Proxy แล้วยังไม่ได้ข้อมูล ให้ใช้ Fallback Data
-    if (!csv) {
+      if (!csv) {
         console.warn('All proxies failed. Using fallback data.');
         csv = fallbackData;
-    }
+      }
 
-    // โค้ดส่วนที่เหลือในการประมวลผล CSV จะเหมือนเดิม
-    try {
+      try {
         if (!csv || csv.trim() === '') {
           throw new Error('Received empty CSV data');
         }
@@ -861,13 +851,12 @@ async function loadData() {
         loadingElement.style.display = 'none';
         chartElement.style.display = 'block';
 
-    } catch (error) {
-        // 4. จัดการกรณีล้มเหลวทั้งหมด
+      } catch (error) {
         console.error('Error loading data after all fallbacks:', error);
         loadingElement.innerHTML =
-          `<div class="spinner"></div><div class="loading-text">Error: ${error.message}. <br>Unable to load data from all sources.</div>`;
+          `<div class="spinner"></div><div class="loading-text">Error: ${error.message}. <br>Click <a href="#" onclick="loadData()">here</a> to retry.</div>`;
+      }
     }
-}
 
     function createFilters() {
       const filtersContainer = document.getElementById('meterFilters');
@@ -996,8 +985,11 @@ async function loadData() {
         console.error('Canvas context not found');
         return;
       }
-      if (chartInstance) chartInstance.destroy();
-
+      try {
+        if (chartInstance) chartInstance.destroy();
+      } catch (err) {
+        console.warn('Chart destroy error:', err);
+      }
       chartInstance = new Chart(ctx, {
         type: 'line',
         data: {
@@ -1005,7 +997,7 @@ async function loadData() {
           datasets: allDatasets
         },
         options: {
-          devicePixelRatio: 3, // เพิ่มความละเอียดในการวาดกราฟ
+          devicePixelRatio: 3,
           responsive: true,
           maintainAspectRatio: false,
           plugins: {
@@ -1031,7 +1023,18 @@ async function loadData() {
               displayColors: true,
               padding: 15,
               titleFont: { size: 14, weight: 'bold' },
-              bodyFont: { size: 13 }
+              bodyFont: { size: 13 },
+              callbacks: {
+                title: function (tooltipItems) {
+                  const timestamp = tooltipItems[0].label;
+                  try {
+                    const [datePart, timePart] = timestamp.split(' ');
+                    return `${datePart} ${timePart}`;
+                  } catch (error) {
+                    return timestamp;
+                  }
+                }
+              }
             }
           },
           scales: {
@@ -1047,7 +1050,16 @@ async function loadData() {
                 maxTicksLimit: 24,
                 autoSkip: true,
                 font: { size: 12 },
-                color: '#6c757d'
+                color: '#6c757d',
+                callback: function (value, index, values) {
+                  const timestamp = this.getLabelForValue(value);
+                  try {
+                    const timePart = timestamp.split(' ')[1];
+                    return timePart;
+                  } catch (error) {
+                    return timestamp;
+                  }
+                }
               },
               grid: {
                 color: 'rgba(0, 0, 0, 0.05)',
@@ -1136,7 +1148,11 @@ async function loadData() {
         console.error('Total chart canvas context not found');
         return;
       }
-      if (totalChartInstance) totalChartInstance.destroy();
+      try {
+        if (totalChartInstance) totalChartInstance.destroy();
+      } catch (err) {
+        console.warn('Total Chart destroy error:', err);
+      }
 
       const { building1Total, building2Total, building3Total, currentTotal } = calculateTotalData();
 
@@ -1204,7 +1220,7 @@ async function loadData() {
           ]
         },
         options: {
-          devicePixelRatio: 3, // เพิ่มความละเอียดในการวาดกราฟ
+          devicePixelRatio: 3,
           responsive: true,
           maintainAspectRatio: false,
           plugins: {
@@ -1230,7 +1246,18 @@ async function loadData() {
               displayColors: true,
               padding: 15,
               titleFont: { size: 14, weight: 'bold' },
-              bodyFont: { size: 13 }
+              bodyFont: { size: 13 },
+              callbacks: {
+                title: function (tooltipItems) {
+                  const timestamp = tooltipItems[0].label;
+                  try {
+                    const [datePart, timePart] = timestamp.split(' ');
+                    return `${datePart} ${timePart}`;
+                  } catch (error) {
+                    return timestamp;
+                  }
+                }
+              }
             }
           },
           scales: {
@@ -1246,7 +1273,16 @@ async function loadData() {
                 maxTicksLimit: 24,
                 autoSkip: true,
                 font: { size: 12 },
-                color: '#6c757d'
+                color: '#6c757d',
+                callback: function (value, index, values) {
+                  const timestamp = this.getLabelForValue(value);
+                  try {
+                    const timePart = timestamp.split(' ')[1];
+                    return timePart;
+                  } catch (error) {
+                    return timestamp;
+                  }
+                }
               },
               grid: {
                 color: 'rgba(0, 0, 0, 0.05)',
@@ -1373,64 +1409,51 @@ async function loadData() {
       document.body.removeChild(link);
     }
 
-   function exportPNG() {
-  if (!chartInstance) {
-    console.warn('No main chart instance to export');
-    alert('No main chart available to export.');
-    return;
-  }
-  const date = new Date().toISOString().split('T')[0];
+    function exportPNG() {
+      if (!chartInstance) {
+        console.warn('No main chart instance to export');
+        alert('No main chart available to export.');
+        return;
+      }
+      const date = new Date().toISOString().split('T')[0];
+      let canvas = document.createElement('canvas');
+      let ctx = canvas.getContext('2d');
+      const mainChartCanvas = chartInstance.canvas;
+      canvas.width = mainChartCanvas.width;
+      canvas.height = mainChartCanvas.height;
 
-  // Export main chart
-  const scale = 1; // เพิ่ม scale เพื่อให้ภาพคมชัดขึ้น
-  let canvas = document.createElement('canvas');
-  let ctx = canvas.getContext('2d');
-  const mainChartCanvas = chartInstance.canvas;
-  canvas.width = mainChartCanvas.width * scale;
-  canvas.height = mainChartCanvas.height * scale;
-  ctx.scale(scale, scale);
+      ctx.fillStyle = 'white';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.drawImage(mainChartCanvas, 0, 0);
 
-  // กำหนดพื้นหลังเป็นสีขาว
-  ctx.fillStyle = 'white';
-  ctx.fillRect(0, 0, canvas.width, canvas.height);
+      let link = document.createElement('a');
+      link.download = `power_chart_${date}.png`;
+      link.href = canvas.toDataURL('image/png');
+      link.style.visibility = 'hidden';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
 
-  // วาดรูปกราฟลงบน canvas
-  ctx.drawImage(mainChartCanvas, 0, 0);
+      if (isTotalChartVisible && totalChartInstance) {
+        canvas = document.createElement('canvas');
+        ctx = canvas.getContext('2d');
+        const totalChartCanvas = totalChartInstance.canvas;
+        canvas.width = totalChartCanvas.width;
+        canvas.height = totalChartCanvas.height;
 
-  // สร้างลิงก์ดาวน์โหลด
-  let link = document.createElement('a');
-  link.download = `power_chart_${date}.png`;
-  link.href = canvas.toDataURL('image/png'); // ใช้ PNG
-  link.style.visibility = 'hidden';
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
+        ctx.fillStyle = 'white';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.drawImage(totalChartCanvas, 0, 0);
 
-  // Export total chart หากเปิดอยู่
-  if (isTotalChartVisible && totalChartInstance) {
-    canvas = document.createElement('canvas');
-    ctx = canvas.getContext('2d');
-    const totalChartCanvas = totalChartInstance.canvas;
-    canvas.width = totalChartCanvas.width * scale;
-    canvas.height = totalChartCanvas.height * scale;
-    ctx.scale(scale, scale);
-
-    // พื้นหลังสีขาว
-    ctx.fillStyle = 'white';
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-    ctx.drawImage(totalChartCanvas, 0, 0);
-
-    link = document.createElement('a');
-    link.download = `total_power_chart_${date}.png`;
-    link.href = canvas.toDataURL('image/png');
-    link.style.visibility = 'hidden';
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-  }
-}
-
+        link = document.createElement('a');
+        link.download = `total_power_chart_${date}.png`;
+        link.href = canvas.toDataURL('image/png');
+        link.style.visibility = 'hidden';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+      }
+    }
 
     function startAutoRefresh() {
       if (refreshInterval) clearInterval(refreshInterval);
@@ -1470,12 +1493,10 @@ async function loadData() {
       });
     });
 
-// ป้องกันการคลิกขวา
     document.addEventListener("contextmenu", function(e) {
       e.preventDefault();
     });
 
-    // ป้องกันการกด Ctrl+C, Ctrl+X, Ctrl+U, Ctrl+S, Ctrl+P
     document.addEventListener("keydown", function(e) {
       if ((e.ctrlKey && ['c', 'x', 'u', 's', 'p'].includes(e.key.toLowerCase())) || e.key === "F12") {
         e.preventDefault();
