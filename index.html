@@ -98,7 +98,7 @@
       padding-top: 10px;
       box-shadow: 2px 0 5px rgba(0, 0, 0, 0.1);
       z-index: 9999;
-      transition: width 0.5s ease;
+      transition: width 0.3s ease;
     }
     .sidebar:hover {
       width: 120px;
@@ -112,7 +112,7 @@
       text-decoration: none;
       font-size: 12px;
       font-weight: 500;
-      transition: all 0.5s ease;
+      transition: all 0.3s ease;
       position: relative;
     }
     .sidebar-item i {
@@ -123,7 +123,7 @@
     }
     .sidebar-item span {
       opacity: 0;
-      transition: opacity 0.5s ease;
+      transition: opacity 0.3s ease;
     }
     .sidebar:hover .sidebar-item span {
       opacity: 1;
@@ -141,7 +141,7 @@
       width: 3px;
       background: linear-gradient(180deg, #ffd700, #ffcc00);
       opacity: 0;
-      transition: opacity 0.5s ease;
+      transition: opacity 0.3s ease;
     }
     .sidebar-item:hover::before {
       opacity: 1;
@@ -156,7 +156,7 @@
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
       gap: 25px;
-      margin-bottom: 30px;
+      margin-bottom: 40px;
     }
     .stat-card {
       background: linear-gradient(135deg, #fff 0%, #f8f9fa 100%);
@@ -236,7 +236,7 @@
       background: linear-gradient(135deg, #fff 0%, #f8f9fa 100%);
       border-radius: 15px;
       box-shadow: 0 5px 20px rgba(0, 0, 0, 0.08);
-      transition: all 0.5s ease;
+      transition: all 0.3s ease;
       min-height: 60px;
       position: relative;
       border: 2px solid transparent;
@@ -251,7 +251,7 @@
       width: 6px;
       border-radius: 15px 0 0 15px;
       background-color: #e0e0e0;
-      transition: all 0.5s ease;
+      transition: all 0.3s ease;
     }
     .filter-item.status-active::before {
       background: linear-gradient(135deg, #4caf50, #8bc34a);
@@ -283,7 +283,7 @@
       font-size: 15px;
       font-weight: 600;
       color: #495057;
-      transition: color 0.5s ease;
+      transition: color 0.3s ease;
     }
     .filter-item:hover label {
       color: #256eff;
@@ -396,16 +396,13 @@
       transform: translateY(-1px);
     }
     .chart-container {
-      padding: 40px 30px;
+      padding: 50px 25px;
       background: linear-gradient(135deg, #fff 0%, #f8f9fa 100%);
       position: relative;
-       /* เพิ่มขอบบน-ล่าง */
-  margin-top: 30px;     /* ขอบบน */
-  margin-bottom: 60px;  /* ขอบล่าง */
     }
     .chart-header {
       text-align: center;
-      margin-bottom: 20px;
+      margin-bottom: 10px;
     }
     .chart-title {
       font-size: 2em;
@@ -414,11 +411,11 @@
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
       background-clip: text;
-      margin-bottom: 15px;
+      margin-bottom: 10px;
     }
     .chart-wrapper {
       position: relative;
-      height: 700px;
+      height: 600px;
       background: linear-gradient(135deg, #fff 0%, #f8f9fa 100%);
       border-radius: 20px;
       padding: 30px;
@@ -426,14 +423,14 @@
       border: 1px solid rgba(37, 111, 255, 0.1);
     }
     #totalChartWrapper {
-      height: 500px;
-      margin-top: 40px;
+      height: 600px;
+      margin-top: 10px;
     }
     .loading {
       display: flex;
       justify-content: center;
       align-items: center;
-      height: 600px;
+      height: 650px;
       font-size: 18px;
       color: #6c757d;
       flex-direction: column;
@@ -478,7 +475,7 @@
         padding: 20px;
       }
       #totalChartWrapper {
-        height: 450px;
+        height: 600px;
       }
     }
     @media (max-width: 768px) {
@@ -515,7 +512,7 @@
         padding: 15px;
       }
       #totalChartWrapper {
-        height: 400px;
+        height: 500px;
       }
       .sidebar {
         width: 35px;
@@ -550,7 +547,7 @@
         height: 400px;
       }
       #totalChartWrapper {
-        height: 350px;
+        height: 400px;
       }
       .sidebar {
         width: 30px;
