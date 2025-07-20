@@ -11,6 +11,7 @@
   <!-- Chart.js แบบ defer -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js" defer></script>
  
+
 <style>
   * {
     margin: 0;
@@ -159,7 +160,7 @@
   }
   .stats {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
     gap: 25px;
     margin-bottom: 20px;
   }
@@ -390,18 +391,18 @@
   }
   .btn-building3 {
   background: linear-gradient(135deg, #20B2AA, #40E0D0);
-  color: white; /* เปลี่ยนสีตัวอักษรเป็นขาว */
+  color: white;
   box-shadow: 0 5px 20px rgba(255, 182, 193, 0.3);
 }
 .btn-building3 i {
-  color: white !important; /* ทำให้ไอคอนเป็นสีขาว */
+  color: white !important;
 }
 .btn-building3:hover {
   transform: translateY(-3px);
   box-shadow: 0 10px 30px rgba(255, 182, 193, 0.4);
 }
 .btn-building3:active {
-  transform: translateY(-1px); /* แก้ไขจาก translate(-1px) เป็น translateY(-1px) */
+  transform: translateY(-1px);
 }
   .btn-expand-data {
     background: linear-gradient(135deg, #ff6b9b, #ff99cc);
@@ -436,24 +437,32 @@
   }
   .chart-wrapper {
     position: relative;
-    height: 550px;
+    height: 600px;
     background: linear-gradient(135deg, #fff 0%, #f8f9fa 100%);
     border-radius: 20px;
     padding: 15px;
     box-shadow: inset 0 5px 20px rgba(0, 0, 0, 0.05);
     border: 1px solid rgba(37, 111, 255, 0.1);
+    transition: height 0.5s ease;
+  }
+  .chart-wrapper.auto-height {
+    height: auto;
+    min-height: 600px;
   }
   #totalChartWrapper {
-    height: 550px;
+    height: 600px;
     margin-top: 5px;
   }
   @media (max-width: 1012px) {
     .chart-wrapper {
-      height: 450px;
+      height: 500px;
       padding: 20px;
     }
+    .chart-wrapper.auto-height {
+      min-height: 500px;
+    }
     #totalChartWrapper {
-      height: 450px;
+      height: 500px;
     }
   }
   @media (max-width: 768px) {
@@ -477,6 +486,9 @@
     .chart-wrapper {
       height: 400px;
       padding: 15px;
+    }
+    .chart-wrapper.auto-height {
+      min-height: 400px;
     }
     #totalChartWrapper {
       height: 400px;
@@ -505,11 +517,15 @@
     .chart-wrapper {
       height: 350px;
     }
+    .chart-wrapper.auto-height {
+      min-height: 350px;
+    }
     #totalChartWrapper {
       height: 350px;
     }
   }
 </style>
+
 
 </head>
 <body>
@@ -596,7 +612,7 @@
 <div class="chart-container">
   <!-- Main Chart Section -->
   <div class="chart-header">
-    <div class="chart-title"><i class="fas fa-chart-line"></i> Power Monitoring</div>
+    <div class="chart-title"><i class="fas fa-chart-line"></i>  Power Monitoring</div>
   </div>
 
   <div class="chart-wrapper">
@@ -608,7 +624,7 @@
   </div>
   <!-- Total Chart Section -->
   <div class="chart-header" id="totalChartHeader" style="display: none;">
-    <div class="chart-title"><i class="fas fa-calculator"></i> Total Power Metrics</div>
+    <div class="chart-title"><i class="fas fa-chart-line"></i>  Total Power Metrics</div>
   </div>
   <div class="chart-wrapper" id="totalChartWrapper" style="display: none;">
     <canvas id="totalChart"></canvas>
@@ -814,7 +830,7 @@
         const value = parseFloat(latestData[index + 1]) || 0;
         let statusClass = 'status-off';
         if (value > 1) statusClass = 'status-active';
-        else if (value > 0.05) statusClass = 'status-standby';
+        else if (value > 0.1) statusClass = 'status-standby';
 
         const filterItem = document.createElement('div');
         filterItem.className = `filter-item ${statusClass}`;
@@ -853,7 +869,7 @@
         const value = parseFloat(latestData?.[index + 1]) || 0;
         let statusClass = 'status-off';
         if (value > 1) statusClass = 'status-active';
-        else if (value > 0.05) statusClass = 'status-standby';
+        else if (value > 0.1) statusClass = 'status-standby';
 
         const filterItem = checkbox.parentElement;
         filterItem.className = `filter-item ${statusClass}`;
