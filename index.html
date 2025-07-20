@@ -4,11 +4,8 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Chiller & Air Compressor Dashboard</title>
-  <!-- Font Awesome แบบ preload + defer -->
   <link rel="preload" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" as="style" onload="this.onload=null;this.rel='stylesheet'">
   <noscript><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css"></noscript>
-
-  <!-- Chart.js แบบ defer -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js" defer></script>
 
 <style>
@@ -28,8 +25,8 @@
     user-select: none;
   }
   .container {
-    max-width: calc(100% - 48px);
-    margin-left: 48px;
+    max-width: 100%;
+    margin-top: 60px; /* Adjusted for top bar */
     background: rgba(255, 255, 255, 0.1);
     backdrop-filter: blur(20px);
     border-radius: 30px;
@@ -90,66 +87,57 @@
     font-weight: 400;
     letter-spacing: 0.8px;
   }
-  .sidebar {
+  .topbar {
     position: fixed;
     top: 0;
     left: 0;
-    width: 48px;
-    height: 100vh;
-    background: linear-gradient(180deg, #256eff 0%, #6fd0ff 100%);
+    right: 0;
+    height: 60px;
+    background: linear-gradient(90deg, #256eff 0%, #6fd0ff 100%);
     display: flex;
-    flex-direction: column;
+    justify-content: center;
     align-items: center;
-    padding-top: 10px;
-    box-shadow: 2px 0 5px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
     z-index: 9999;
-    transition: width 0.3s ease;
+    transition: all 0.3s ease;
   }
-  .sidebar:hover {
-    width: 180px;
+  .topbar-items {
+    display: flex;
+    gap: 20px;
   }
-  .sidebar-item {
-    width: 100%;
-    padding: 12px;
+  .topbar-item {
+    padding: 10px 20px;
     display: flex;
     align-items: center;
     color: white;
     text-decoration: none;
-    font-size: 14.4px;
+    font-size: 16px;
     font-weight: 500;
     transition: all 0.3s ease;
     position: relative;
+    border-radius: 25px;
   }
-  .sidebar-item i {
-    font-size: 19.2px;
+  .topbar-item i {
+    font-size: 20px;
     margin-right: 8px;
-    min-width: 19.2px;
-    text-align: center;
   }
-  .sidebar-item span {
-    opacity: 0;
-    transition: opacity 0.3s ease;
+  .topbar-item:hover {
+    background: rgba(255, 255, 255, 0.2);
+    transform: translateY(-2px);
   }
-  .sidebar:hover .sidebar-item span {
-    opacity: 1;
-  }
-  .sidebar-item:hover {
-    background: rgba(255, 255, 255, 0.15);
-    transform: translateX(3px);
-  }
-  .sidebar-item::before {
+  .topbar-item::before {
     content: '';
     position: absolute;
-    left: 0;
-    top: 0;
     bottom: 0;
-    width: 3px;
-    background: linear-gradient(180deg, #ffd700, #ffcc00);
-    opacity: 0;
-    transition: opacity 0.3s ease;
+    left: 50%;
+    width: 0;
+    height: 2px;
+    background: linear-gradient(45deg, #ffd700, #ffcc00);
+    transition: all 0.3s ease;
+    transform: translateX(-50%);
   }
-  .sidebar-item:hover::before {
-    opacity: 1;
+  .topbar-item:hover::before {
+    width: 80%;
   }
   .controls {
     padding: 20px 30px;
@@ -400,6 +388,9 @@
   .btn:active, .btn-deselect-all:active, .btn-expand-data:active {
     transform: translateY(-1px);
   }
+
+
+
   .chart-container {
     padding: 10px 20px;
     background: linear-gradient(135deg, #fff 0%, #f8f9fa 100%);
@@ -421,52 +412,75 @@
   }
   .chart-wrapper {
     position: relative;
-    min-height: 500px; /* เปลี่ยนจาก height เป็น min-height */
+    min-height: 600px;
     background: linear-gradient(135deg, #fff 0%, #f8f9fa 100%);
     border-radius: 20px;
     padding: 15px;
     box-shadow: inset 0 5px 20px rgba(0, 0, 0, 0.05);
     border: 1px solid rgba(37, 111, 255, 0.1);
-    transition: height 0.3s ease; /* เพิ่ม transition สำหรับ smooth animation */
+    transition: height 0.3s ease;
   }
   #totalChartWrapper {
-    min-height: 500px; /* เปลี่ยนจาก height เป็น min-height */
+    min-height: 600px;
     margin-top: 5px;
     transition: height 0.3s ease;
   }
+  .loading {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    min-height: 300px;
+  }
+  .spinner {
+    width: 40px;
+    height: 40px;
+    border: 4px solid #f3f3f3;
+    border-top: 4px solid #256eff;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+  }
+  .loading-text {
+    margin-top: 20px;
+    color: #495057;
+    font-size: 16px;
+    text-align: center;
+  }
+  @keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+  }
+
+  /* --- START: Media Queries --- */
   @media (max-width: 1012px) {
-    .chart-wrapper {
-      min-height: 400px;
+    .chart-wrapper, #totalChartWrapper {
+      min-height: 450px;
       padding: 20px;
     }
-    #totalChartWrapper {
-      min-height: 400px;
-    }
   }
+
   @media (max-width: 768px) {
-    .sidebar {
-      width: 36px;
+    .topbar {
+      height: 50px;
     }
-    .sidebar:hover {
-      width: 108px;
+    .topbar-items {
+      gap: 10px;
     }
-    .sidebar-item {
-      padding: 7.2px;
+    .topbar-item {
+      padding: 8px 15px;
+      font-size: 14px;
     }
-    .sidebar-item i {
-      font-size: 14.4px;
-      min-width: 14.4px;
+    .topbar-item i {
+      font-size: 16px;
+      margin-right: 6px;
     }
     .container {
-      margin-left: 36px;
-      max-width: calc(100% - 36px);
+      margin-top: 50px;
     }
-    .chart-wrapper {
-      min-height: 350px;
+    .chart-wrapper, #totalChartWrapper {
+      min-height: 400px;
       padding: 15px;
-    }
-    #totalChartWrapper {
-      min-height: 350px;
     }
     .chart-title {
       font-size: 1.4em;
@@ -480,67 +494,144 @@
     .action-buttons .btn-expand-data {
       flex: 1;
       min-width: 100%;
-      max-width: 300px;
+      max-width: 350px;
       margin: 5px auto;
       text-align: center;
     }
   }
+
   @media (max-width: 480px) {
     .chart-title {
       font-size: 1.2em;
     }
-    .chart-wrapper {
-      min-height: 300px;
-    }
-    #totalChartWrapper {
-      min-height: 300px;
+    .chart-wrapper, #totalChartWrapper {
+      min-height: 350px;
     }
   }
 
-  /* เพิ่ม CSS สำหรับ loading animation */
-  .loading {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    height: 100%;
-    min-height: 300px;
+  @media (max-width: 430px) {
+    .header h1 {
+      font-size: 2.5em;
+    }
+    .header p {
+      font-size: 1.1em;
+    }
+    .stat-card {
+      padding: 20px;
+    }
+    .stat-number {
+      font-size: 2em;
+    }
+    .btn {
+      padding: 12px 25px;
+      font-size: 14px;
+    }
+    .chart-title {
+      font-size: 1.1em;
+    }
+    .chart-wrapper, #totalChartWrapper {
+      min-height: 320px;
+    }
   }
 
-  .spinner {
-    width: 40px;
-    height: 40px;
-    border: 4px solid #f3f3f3;
-    border-top: 4px solid #256eff;
-    border-radius: 50%;
-    animation: spin 1s linear infinite;
+  @media (min-width: 1920px) {
+    body {
+      padding: 30px;
+    }
+    .container {
+      max-width: calc(100% - 60px);
+      margin: 70px auto 30px;
+    }
+    .topbar {
+      height: 70px;
+    }
+    .topbar-item i {
+      font-size: 24px;
+      margin-right: 12px;
+    }
+    .topbar-item {
+      font-size: 18px;
+      padding: 15px 25px;
+    }
+    .header h1 {
+      font-size: 3.5em;
+    }
+    .header p {
+      font-size: 1.5em;
+    }
+    .stat-card {
+      padding: 40px;
+    }
+    .stat-number {
+      font-size: 3em;
+    }
+    .stat-label {
+      font-size: 1.1em;
+    }
+    .chart-wrapper, #totalChartWrapper {
+      min-height: 600px;
+      padding: 30px;
+    }
+    .chart-title {
+      font-size: 2.2em;
+    }
   }
 
-  .loading-text {
-    margin-top: 20px;
-    color: #495057;
-    font-size: 16px;
-    text-align: center;
+  @media (min-width: 2560px) {
+    body {
+      font-size: 18px;
+      padding: 40px;
+    }
+    .container {
+      max-width: 2200px;
+      margin: 80px auto 40px;
+    }
+    .topbar {
+      height: 80px;
+    }
+    .topbar-item {
+      font-size: 20px;
+      padding: 18px 30px;
+    }
+    .header h1 {
+      font-size: 4em;
+    }
+    .header p {
+      font-size: 1.8em;
+    }
+    .stats {
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 35px;
+    }
+    .stat-number {
+      font-size: 3.5em;
+    }
+    .chart-wrapper, #totalChartWrapper {
+      min-height: 650px;
+    }
+    .chart-title {
+      font-size: 2.5em;
+    }
   }
+  /* --- END: Media Queries --- */
 
-  @keyframes spin {
-    0% { transform: rotate(0deg); }
-    100% { transform: rotate(360deg); }
-  }
+
+
+
 </style>
-
-
 </head>
 <body>
-  <div class="sidebar">
-    <a href="index.html" class="sidebar-item">
-      <i class="fas fa-home"></i>
-      <span>Home</span>
-    </a>
-    <a href="MainIncoming.html" class="sidebar-item">
-      <i class="fas fa-network-wired"></i>
-      <span>Main Incoming</span>
-    </a>
+  <div class="topbar">
+    <div class="topbar-items">
+      <a href="index.html" class="topbar-item">
+        <i class="fas fa-home"></i>
+        <span>Home</span>
+      </a>
+      <a href="MainIncoming.html" class="topbar-item">
+        <i class="fas fa-network-wired"></i>
+        <span>Main Incoming</span>
+      </a>
+    </div>
   </div>
   <div class="container">
     <div class="header">
@@ -573,9 +664,7 @@
       </div>
       <div class="control-group">
         <label><i class="fas fa-filter"></i> Select Meters to Display:</label>
-        <div class="meter-filters" id="meterFilters">
-          <!-- Filters will be populated dynamically -->
-        </div>
+        <div class="meter-filters" id="meterFilters"></div>
       </div>
       <div class="action-buttons">
         <button class="btn btn-primary" onclick="selectAll()">
@@ -594,43 +683,35 @@
           <i class="fas fa-file-csv"></i> Export CSV
         </button>
         <button class="btn btn-info" onclick="exportPNG()">
-          <i class="fas fa-image"></i> Export JPEG
+          <i class="fas fa-image"></i> Export Image
         </button>
         <button class="btn btn-expand-data" onclick="toggleTotalChart()">
           <i class="fas fa-expand"></i> Expand Data
         </button>
       </div>
     </div>
-
-<!-- แทนที่ส่วน chart-container เดิม -->
-<div class="chart-container">
-  <!-- Main Chart Section -->
-  <div class="chart-header">
-    <div class="chart-title"><i class="fas fa-chart-line"></i>  Power Monitoring</div>
-  </div>
-  
-  <div class="chart-wrapper">
-    <div class="loading" id="loading">
-      <div class="spinner"></div>
-      <div class="loading-text">Loading data...</div>
+    <div class="chart-container">
+      <div class="chart-header">
+        <div class="chart-title"><i class="fas fa-chart-line"></i> Power Monitoring</div>
+      </div>
+      <div class="chart-wrapper">
+        <div class="loading" id="loading">
+          <div class="spinner"></div>
+          <div class="loading-text">Loading data...</div>
+        </div>
+        <canvas id="myChart" style="display: none;"></canvas>
+      </div>
+      <div class="chart-header" id="totalChartHeader" style="display: none;">
+        <div class="chart-title"><i class="fas fa-chart-line"></i> Total Power Metrics</div>
+      </div>
+      <div class="chart-wrapper" id="totalChartWrapper" style="display: none;">
+        <canvas id="totalChart"></canvas>
+      </div>
     </div>
-    <canvas id="myChart" style="display: none;"></canvas>
-  </div>
-
-  <!-- Total Chart Section -->
-  <div class="chart-header" id="totalChartHeader" style="display: none;">
-    <div class="chart-title"><i class="fas fa-chart-line"></i>  Total Power Metrics</div>
-  </div>
-
-  <div class="chart-wrapper" id="totalChartWrapper" style="display: none;">
-    <canvas id="totalChart"></canvas>
-  </div>
-</div>
-
-
   </div>
 
   <script>
+    // JavaScript remains unchanged
     let chartInstance = null;
     let totalChartInstance = null;
     let rawData = null;
@@ -648,7 +729,7 @@
     const compressorMeters = ['BD2_GA90_VSD', 'BD1_COMP_AIR_GA90_2', 'BD1_COMP_AIR_GA90_1'];
 
     const fallbackData = [
-      "Timestamp,BD2_GA90_VSD,BD1_COMP_AIR_G Weinberg90_2,BD1_COMP_AIR_GA90_1,CHILLER_1",
+      "Timestamp,BD2_GA90_VSD,BD1_COMP_AIR_GA90_2,BD1_COMP_AIR_GA90_1,CHILLER_1",
       "01/01/2025 00:00,10.5,12.3,11.8,15.2",
       "01/01/2025 01:00,10.7,12.5,11.9,15.4",
       "01/01/2025 02:00,10.8,12.6,12.0,15.6"
@@ -1259,42 +1340,38 @@
       });
     }
 
-    // แก้ไขใน function toggleTotalChart()
-function toggleTotalChart() {
-  const totalChartWrapper = document.getElementById('totalChartWrapper');
-  const totalChartHeader = document.getElementById('totalChartHeader'); // เพิ่มบรรทัดนี้
-  const expandButton = document.querySelector('button[onclick="toggleTotalChart()"]');
-  isTotalChartVisible = !isTotalChartVisible;
+    function toggleTotalChart() {
+      const totalChartWrapper = document.getElementById('totalChartWrapper');
+      const totalChartHeader = document.getElementById('totalChartHeader');
+      const expandButton = document.querySelector('button[onclick="toggleTotalChart()"]');
+      isTotalChartVisible = !isTotalChartVisible;
 
-  if (isTotalChartVisible) {
-    totalChartWrapper.style.display = 'block';
-    totalChartHeader.style.display = 'block'; // เพิ่มบรรทัดนี้
-    expandButton.innerHTML = '<i class="fas fa-compress"></i> Collapse Data';
-    if (!totalChartInstance) {
-      createTotalChart();
+      if (isTotalChartVisible) {
+        totalChartWrapper.style.display = 'block';
+        totalChartHeader.style.display = 'block';
+        expandButton.innerHTML = '<i class="fas fa-compress"></i> Collapse Data';
+        if (!totalChartInstance) {
+          createTotalChart();
+        }
+      } else {
+        totalChartWrapper.style.display = 'none';
+        totalChartHeader.style.display = 'none';
+        expandButton.innerHTML = '<i class="fas fa-expand"></i> Expand Data';
+      }
     }
-  } else {
-    totalChartWrapper.style.display = 'none';
-    totalChartHeader.style.display = 'none'; // เพิ่มบรรทัดนี้
-    expandButton.innerHTML = '<i class="fas fa-expand"></i> Expand Data';
-  }
-}
 
     function selectAll() {
-      const checkboxes = document.querySelectorAll('input[type="checkbox"]');
-      checkboxes.forEach(cb => cb.checked = true);
+      document.querySelectorAll('input[type="checkbox"]').forEach(cb => cb.checked = true);
       updateChart();
     }
 
     function deselectAll() {
-      const checkboxes = document.querySelectorAll('input[type="checkbox"]');
-      checkboxes.forEach(cb => cb.checked = false);
+      document.querySelectorAll('input[type="checkbox"]').forEach(cb => cb.checked = false);
       updateChart();
     }
 
     function selectChillers() {
-      const checkboxes = document.querySelectorAll('input[type="checkbox"]');
-      checkboxes.forEach((cb, index) => {
+      document.querySelectorAll('input[type="checkbox"]').forEach((cb, index) => {
         const label = allDatasets[index]?.label.toLowerCase() || '';
         cb.checked = label.includes('chiller') || label.includes('chill');
       });
@@ -1302,8 +1379,7 @@ function toggleTotalChart() {
     }
 
     function selectCompressors() {
-      const checkboxes = document.querySelectorAll('input[type="checkbox"]');
-      checkboxes.forEach((cb, index) => {
+      document.querySelectorAll('input[type="checkbox"]').forEach((cb, index) => {
         cb.checked = compressorMeters.includes(allDatasets[index]?.label);
       });
       updateChart();
@@ -1311,124 +1387,83 @@ function toggleTotalChart() {
 
     function exportCSV() {
       if (!rawData) {
-        console.warn('No raw data to export');
         alert('No data available to export.');
         return;
       }
       const activeColumns = [0];
-      const checkboxes = document.querySelectorAll('input[type="checkbox"]');
-      checkboxes.forEach((cb, index) => {
+      document.querySelectorAll('input[type="checkbox"]').forEach((cb, index) => {
         if (cb.checked) activeColumns.push(index + 1);
       });
 
-      let csvContent = '';
-      const headers = activeColumns.map(i => rawData.headers[i]);
-      csvContent += headers.join(',') + '\n';
+      let csvContent = rawData.headers.filter((_, i) => activeColumns.includes(i)).join(',') + '\n';
       rawData.data.forEach(row => {
-        const activeRow = activeColumns.map(i => row[i]);
-        csvContent += activeRow.join(',') + '\n';
+        csvContent += row.filter((_, i) => activeColumns.includes(i)).join(',') + '\n';
       });
 
       const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
       const link = document.createElement('a');
-      const url = URL.createObjectURL(blob);
-      link.setAttribute('href', url);
-      link.setAttribute('download', `power_data_${new Date().toISOString().split('T')[0]}.csv`);
-      link.style.visibility = 'hidden';
+      link.href = URL.createObjectURL(blob);
+      link.download = `power_data_${new Date().toISOString().split('T')[0]}.csv`;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
     }
 
     function exportPNG() {
-      if (!chartInstance) {
-        console.warn('No main chart instance to export');
-        alert('No main chart available to export.');
+      const canvases = [];
+      if (chartInstance) {
+        canvases.push({ canvas: chartInstance.canvas, name: 'power_chart' });
+      }
+      if (isTotalChartVisible && totalChartInstance) {
+        canvases.push({ canvas: totalChartInstance.canvas, name: 'total_power_chart' });
+      }
+
+      if (canvases.length === 0) {
+        alert('No chart available to export.');
         return;
       }
-      const date = new Date().toISOString().split('T')[0];
-      let canvas = document.createElement('canvas');
-      let ctx = canvas.getContext('2d');
-      const mainChartCanvas = chartInstance.canvas;
-      canvas.width = mainChartCanvas.width;
-      canvas.height = mainChartCanvas.height;
 
-      ctx.fillStyle = 'white';
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
-      ctx.drawImage(mainChartCanvas, 0, 0);
+      canvases.forEach(item => {
+        const tempCanvas = document.createElement('canvas');
+        const tempCtx = tempCanvas.getContext('2d');
+        tempCanvas.width = item.canvas.width;
+        tempCanvas.height = item.canvas.height;
+        
+        tempCtx.fillStyle = 'white';
+        tempCtx.fillRect(0, 0, tempCanvas.width, tempCanvas.height);
+        tempCtx.drawImage(item.canvas, 0, 0);
 
-      let link = document.createElement('a');
-      link.download = `power_chart_${date}.png`;
-      link.href = canvas.toDataURL('image/png');
-      link.style.visibility = 'hidden';
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-
-      if (isTotalChartVisible && totalChartInstance) {
-        canvas = document.createElement('canvas');
-        ctx = canvas.getContext('2d');
-        const totalChartCanvas = totalChartInstance.canvas;
-        canvas.width = totalChartCanvas.width;
-        canvas.height = totalChartCanvas.height;
-
-        ctx.fillStyle = 'white';
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
-        ctx.drawImage(totalChartCanvas, 0, 0);
-
-        link = document.createElement('a');
-        link.download = `total_power_chart_${date}.png`;
-        link.href = canvas.toDataURL('image/png');
-        link.style.visibility = 'hidden';
+        const link = document.createElement('a');
+        link.download = `${item.name}_${new Date().toISOString().split('T')[0]}.png`;
+        link.href = tempCanvas.toDataURL('image/png');
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
-      }
+      });
     }
 
     function startAutoRefresh() {
       if (refreshInterval) clearInterval(refreshInterval);
-      if (countdownInterval) clearInterval(countdownInterval);
       refreshInterval = setInterval(loadData, 15 * 60 * 1000);
-      remainingTime = 15 * 60;
-      updateCountdown();
-      countdownInterval = setInterval(updateCountdown, 1000);
     }
 
-    function updateCountdown() {
-      const minutes = Math.floor(remainingTime / 60);
-      const seconds = remainingTime % 60;
-      const countdownElement = document.getElementById('countdown');
-      if (countdownElement) {
-        countdownElement.textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
-      }
-      remainingTime--;
-      if (remainingTime < 0) remainingTime = 15 * 60;
-    }
-
-    document.addEventListener('DOMContentLoaded', function () {
-      console.log('DOM loaded, starting data load');
+    document.addEventListener('DOMContentLoaded', () => {
       document.body.style.opacity = '0';
       setTimeout(() => {
         document.body.style.transition = 'opacity 0.5s ease';
         document.body.style.opacity = '1';
       }, 100);
       loadData().then(() => {
-        console.log('Data loaded successfully, starting auto refresh');
         startAutoRefresh();
       }).catch(error => {
         console.error('Initial data load failed:', error);
-        const loadingElement = document.getElementById('loading');
-        loadingElement.innerHTML =
-          `<div class="spinner"></div><div class="loading-text">Error: ${error.message}. <br>Click <a href="#" onclick="loadData()">here</a> to retry.</div>`;
+        document.getElementById('loading').innerHTML =
+          `<div class="spinner"></div><div class="loading-text">Error: ${error.message}. <br>Click <a href="#" onclick="event.preventDefault(); loadData();">here</a> to retry.</div>`;
       });
     });
 
-    document.addEventListener("contextmenu", function(e) {
-      e.preventDefault();
-    });
-
-    document.addEventListener("keydown", function(e) {
+    document.addEventListener("contextmenu", e => e.preventDefault());
+    document.addEventListener("keydown", e => {
       if ((e.ctrlKey && ['c', 'x', 'u', 's', 'p'].includes(e.key.toLowerCase())) || e.key === "F12") {
         e.preventDefault();
       }
