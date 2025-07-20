@@ -159,7 +159,7 @@
   }
   .stats {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
     gap: 25px;
     margin-bottom: 20px;
   }
@@ -421,24 +421,26 @@
   }
   .chart-wrapper {
     position: relative;
-    height: 550px;
+    min-height: 500px; /* เปลี่ยนจาก height เป็น min-height */
     background: linear-gradient(135deg, #fff 0%, #f8f9fa 100%);
     border-radius: 20px;
     padding: 15px;
     box-shadow: inset 0 5px 20px rgba(0, 0, 0, 0.05);
     border: 1px solid rgba(37, 111, 255, 0.1);
+    transition: height 0.3s ease; /* เพิ่ม transition สำหรับ smooth animation */
   }
   #totalChartWrapper {
-    height: 550px;
+    min-height: 500px; /* เปลี่ยนจาก height เป็น min-height */
     margin-top: 5px;
+    transition: height 0.3s ease;
   }
   @media (max-width: 1012px) {
     .chart-wrapper {
-      height: 450px;
+      min-height: 400px;
       padding: 20px;
     }
     #totalChartWrapper {
-      height: 450px;
+      min-height: 400px;
     }
   }
   @media (max-width: 768px) {
@@ -460,11 +462,11 @@
       max-width: calc(100% - 36px);
     }
     .chart-wrapper {
-      height: 400px;
+      min-height: 350px;
       padding: 15px;
     }
     #totalChartWrapper {
-      height: 400px;
+      min-height: 350px;
     }
     .chart-title {
       font-size: 1.4em;
@@ -488,11 +490,42 @@
       font-size: 1.2em;
     }
     .chart-wrapper {
-      height: 350px;
+      min-height: 300px;
     }
     #totalChartWrapper {
-      height: 350px;
+      min-height: 300px;
     }
+  }
+
+  /* เพิ่ม CSS สำหรับ loading animation */
+  .loading {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    min-height: 300px;
+  }
+
+  .spinner {
+    width: 40px;
+    height: 40px;
+    border: 4px solid #f3f3f3;
+    border-top: 4px solid #256eff;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+  }
+
+  .loading-text {
+    margin-top: 20px;
+    color: #495057;
+    font-size: 16px;
+    text-align: center;
+  }
+
+  @keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
   }
 </style>
 
@@ -573,7 +606,7 @@
 <div class="chart-container">
   <!-- Main Chart Section -->
   <div class="chart-header">
-    <div class="chart-title"><i class="fas fa-chart-line"></i> Power Monitoring Dashboard</div>
+    <div class="chart-title"><i class="fas fa-chart-line"></i>  Power Monitoring</div>
   </div>
   
   <div class="chart-wrapper">
@@ -586,7 +619,7 @@
 
   <!-- Total Chart Section -->
   <div class="chart-header" id="totalChartHeader" style="display: none;">
-    <div class="chart-title"><i class="fas fa-calculator"></i> Total Power Analytics</div>
+    <div class="chart-title"><i class="fas fa-chart-line"></i>  Total Power Metrics</div>
   </div>
 
   <div class="chart-wrapper" id="totalChartWrapper" style="display: none;">
