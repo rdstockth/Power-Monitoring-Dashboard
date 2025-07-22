@@ -939,7 +939,7 @@ Timestamp,BD1_TR1_MAIN,BD1_TR2_MAIN,BD1_TR3_MAIN,BD2_TR1_MAIN,BD2_TR2_MAIN,BD2_T
           throw new Error('Received empty CSV data');
         }
 
-        const lines = csv.trim().split('\n');
+        const lines = csv.trim().split(/\r?\n/); // รองรับทั้ง \n และ \r\n
         if (lines.length < 2) {
           throw new Error('CSV data is too short or invalid');
         }
