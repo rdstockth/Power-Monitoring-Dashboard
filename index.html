@@ -910,7 +910,7 @@ Timestamp,BD2_GA90_VSD,BD1_COMP_AIR_GA90_2,BD1_COMP_AIR_GA90_1,CHILLER_1
           throw new Error('Received empty CSV data');
         }
 
-        const lines = csv.trim().split('\n');
+        const lines = csv.trim().split(/\r?\n/); // รองรับทั้ง \n และ \r\n
         if (lines.length < 2) {
           throw new Error('CSV data is too short or invalid');
         }
