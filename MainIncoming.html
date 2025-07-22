@@ -1,14 +1,19 @@
 <!DOCTYPE html>
-<html lang="th">
+<html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Main Incoming Power Dashboard</title>
-  <!-- Font Awesome -->
-  <link rel="preload" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" as="style" onload="this.onload=null;this.rel='stylesheet'">
-  <noscript><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css"></noscript>
-  <!-- Chart.js -->
-  <script src="https://cdn.jsdelivr.net/npm/chart.js" defer></script>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Main Incoming Power Dashboard</title>
+
+<!-- Font Awesome with lazy load -->
+<link rel="preload" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css " as="style" onload="this.onload=null;this.rel='stylesheet'">
+<noscript><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css "></noscript>
+
+<!-- Preload Chart.js -->
+<link rel="preload" href="https://cdn.jsdelivr.net/npm/chart.js " as="script" crossorigin>
+
+<!-- Load Chart.js deferred -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js " defer crossorigin></script>
 
   <style>
     * {
@@ -89,65 +94,58 @@
       font-weight: 400;
       letter-spacing: 0.8px;
     }
-
-
-
-     .topbar {
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    height: 60px;
-    background: linear-gradient(90deg, #256eff 0%, #6fd0ff 100%);
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-    z-index: 9999;
-    transition: all 0.3s ease;
-  }
-  .topbar-items {
-    display: flex;
-    gap: 20px;
-  }
-  .topbar-item {
-    padding: 10px 20px;
-    display: flex;
-    align-items: center;
-    color: white;
-    text-decoration: none;
-    font-size: 16px;
-    font-weight: 500;
-    transition: all 0.3s ease;
-    position: relative;
-    border-radius: 25px;
-  }
-  .topbar-item i {
-    font-size: 20px;
-    margin-right: 8px;
-  }
-  .topbar-item:hover {
-    background: rgba(255, 255, 255, 0.2);
-    transform: translateY(-2px);
-  }
-  .topbar-item::before {
-    content: '';
-    position: absolute;
-    bottom: 0;
-    left: 50%;
-    width: 0;
-    height: 2px;
-    background: linear-gradient(45deg, #ffd700, #ffcc00);
-    transition: all 0.3s ease;
-    transform: translateX(-50%);
-  }
-  .topbar-item:hover::before {
-    width: 80%;
-  }
-
-
-
-
+    .topbar {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 60px;
+      background: linear-gradient(90deg, #256eff 0%, #6fd0ff 100%);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+      z-index: 9999;
+      transition: all 0.3s ease;
+    }
+    .topbar-items {
+      display: flex;
+      gap: 20px;
+    }
+    .topbar-item {
+      padding: 10px 20px;
+      display: flex;
+      align-items: center;
+      color: white;
+      text-decoration: none;
+      font-size: 16px;
+      font-weight: 500;
+      transition: all 0.3s ease;
+      position: relative;
+      border-radius: 25px;
+    }
+    .topbar-item i {
+      font-size: 20px;
+      margin-right: 8px;
+    }
+    .topbar-item:hover {
+      background: rgba(255, 255, 255, 0.2);
+      transform: translateY(-2px);
+    }
+    .topbar-item::before {
+      content: '';
+      position: absolute;
+      bottom: 0;
+      left: 50%;
+      width: 0;
+      height: 2px;
+      background: linear-gradient(45deg, #ffd700, #ffcc00);
+      transition: all 0.3s ease;
+      transform: translateX(-50%);
+    }
+    .topbar-item:hover::before {
+      width: 80%;
+    }
     .controls {
       padding: 20px 30px;
       background: rgba(255, 255, 255, 0.95);
@@ -366,7 +364,7 @@
       box-shadow: 0 5px 20px rgba(76, 175, 80, 0.3);
     }
     .btn-info {
-      background: linear-gradient(135deg, #2196f3, #21cbf3);
+      background: linear-gradient(135deg, #6633FF, #66CCFF);
       color: white;
       box-shadow: 0 5px 20px rgba(33, 150, 123, 0.3);
     }
@@ -412,243 +410,259 @@
     .btn:active, .btn-deselect-all:active, .btn-expand-data:active {
       transform: translateY(-1px);
     }
-
-  .chart-container {
-    padding: 10px 20px;
-    background: linear-gradient(135deg, #fff 0%, #f8f9fa 100%);
-    position: relative;
-  }
-  .chart-header {
-    text-align: center;
-    margin-bottom: -15px;
-    padding: 10px 0;
-  }
-  .chart-title {
-    font-size: 1.8em;
-    font-weight: 700;
-    background: linear-gradient(45deg, #256eff, #6fd0ff);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
-    margin-bottom: 15px;
-  }
-  .chart-wrapper {
-    position: relative;
-    min-height: 500px;
-    background: linear-gradient(135deg, #fff 0%, #f8f9fa 100%);
-    border-radius: 20px;
-    padding: 15px;
-    box-shadow: inset 0 5px 20px rgba(0, 0, 0, 0.05);
-    border: 1px solid rgba(37, 111, 255, 0.1);
-    transition: height 0.3s ease;
-  }
-  #totalChartWrapper {
-    min-height: 500px;
-    margin-top: 5px;
-    transition: height 0.3s ease;
-  }
-  .loading {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    height: 100%;
-    min-height: 300px;
-  }
-  .spinner {
-    width: 40px;
-    height: 40px;
-    border: 4px solid #f3f3f3;
-    border-top: 4px solid #256eff;
-    border-radius: 50%;
-    animation: spin 1s linear infinite;
-  }
-  .loading-text {
-    margin-top: 20px;
-    color: #495057;
-    font-size: 16px;
-    text-align: center;
-  }
-  @keyframes spin {
-    0% { transform: rotate(0deg); }
-    100% { transform: rotate(360deg); }
-  }
-
-  /* --- START: Media Queries --- */
-  @media (max-width: 1012px) {
-    .chart-wrapper, #totalChartWrapper {
-      min-height: 400px;
-      padding: 20px;
+    .chart-container {
+      padding: 10px 20px;
+      background: linear-gradient(135deg, #fff 0%, #f8f9fa 100%);
+      position: relative;
     }
-  }
-
-  @media (max-width: 768px) {
-    .topbar {
-      height: 50px;
-    }
-    .topbar-items {
-      gap: 10px;
-    }
-    .topbar-item {
-      padding: 8px 15px;
-      font-size: 14px;
-    }
-    .topbar-item i {
-      font-size: 16px;
-      margin-right: 6px;
-    }
-    .container {
-      margin-top: 50px;
-    }
-    .chart-wrapper, #totalChartWrapper {
-      min-height: 350px;
-      padding: 15px;
-    }
-    .chart-title {
-      font-size: 1.4em;
-    }
-    .action-buttons {
-      flex-direction: column;
-      align-items: stretch;
-    }
-    .action-buttons .btn,
-    .action-buttons .btn-deselect-all,
-    .action-buttons .btn-expand-data {
-      flex: 1;
-      min-width: 100%;
-      max-width: 350px;
-      margin: 5px auto;
+    .chart-header {
       text-align: center;
-    }
-  }
-
-  @media (max-width: 480px) {
-    .chart-title {
-      font-size: 1.2em;
-    }
-    .chart-wrapper, #totalChartWrapper {
-      min-height: 320px;
-    }
-  }
-
-  @media (max-width: 430px) {
-    .header h1 {
-      font-size: 2.5em;
-    }
-    .header p {
-      font-size: 1.1em;
-    }
-    .stat-card {
-      padding: 20px;
-    }
-    .stat-number {
-      font-size: 2em;
-    }
-    .btn {
-      padding: 12px 25px;
-      font-size: 14px;
+      margin-bottom: -15px;
+      padding: 10px 0;
     }
     .chart-title {
-      font-size: 1.1em;
+      font-size: 1.8em;
+      font-weight: 700;
+      background: linear-gradient(45deg, #256eff, #6fd0ff);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      margin-bottom: 15px;
     }
-    .chart-wrapper, #totalChartWrapper {
+    .chart-wrapper {
+      position: relative;
+      min-height: 500px;
+      background: linear-gradient(135deg, #fff 0%, #f8f9fa 100%);
+      border-radius: 20px;
+      padding: 15px;
+      box-shadow: inset 0 5px 20px rgba(0, 0, 0, 0.05);
+      border: 1px solid rgba(37, 111, 255, 0.1);
+      transition: height 0.3s ease;
+    }
+    #totalChartWrapper {
+      min-height: 500px;
+      margin-top: 5px;
+      transition: height 0.3s ease;
+    }
+    .loading {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100%;
       min-height: 300px;
     }
-  }
-
-  @media (min-width: 1920px) {
-    body {
-      padding: 30px;
+    .spinner {
+      width: 40px;
+      height: 40px;
+      border: 4px solid #f3f3f3;
+      border-top: 4px solid #256eff;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
     }
-    .container {
-      max-width: calc(100% - 60px);
-      margin: 70px auto 30px;
+    .loading-text {
+      margin-top: 20px;
+      color: #495057;
+      font-size: 16px;
+      text-align: center;
     }
-    .topbar {
-      height: 70px;
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
     }
-    .topbar-item i {
-      font-size: 24px;
-      margin-right: 12px;
+    .error-modal {
+      position: fixed;
+      top: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: #f44336;
+      color: white;
+      padding: 15px;
+      border-radius: 8px;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+      z-index: 10000;
+      display: flex;
+      gap: 10px;
+      align-items: center;
     }
-    .topbar-item {
-      font-size: 18px;
-      padding: 15px 25px;
+    .error-modal button {
+      padding: 8px 16px;
+      border: none;
+      border-radius: 4px;
+      background: #fff;
+      color: #f44336;
+      cursor: pointer;
+      font-weight: 600;
     }
-    .header h1 {
-      font-size: 3.5em;
+    @media (max-width: 1012px) {
+      .chart-wrapper, #totalChartWrapper {
+        min-height: 420px;
+        padding: 20px;
+      }
     }
-    .header p {
-      font-size: 1.5em;
+    @media (max-width: 768px) {
+      .topbar {
+        height: 50px;
+      }
+      .topbar-items {
+        gap: 10px;
+      }
+      .topbar-item {
+        padding: 8px 15px;
+        font-size: 14px;
+      }
+      .topbar-item i {
+        font-size: 16px;
+        margin-right: 6px;
+      }
+      .container {
+        margin-top: 50px;
+      }
+      .chart-wrapper, #totalChartWrapper {
+        min-height: 400px;
+        padding: 15px;
+      }
+      .chart-title {
+        font-size: 1.4em;
+      }
+      .action-buttons {
+        flex-direction: column;
+        align-items: stretch;
+      }
+      .action-buttons .btn,
+      .action-buttons .btn-deselect-all,
+      .action-buttons .btn-expand-data {
+        flex: 1;
+        min-width: 100%;
+        max-width: 350px;
+        margin: 5px auto;
+        text-align: center;
+      }
     }
-    .stat-card {
-      padding: 40px;
+    @media (max-width: 480px) {
+      .chart-title {
+        font-size: 1.2em;
+      }
+      .chart-wrapper, #totalChartWrapper {
+        min-height: 350px;
+      }
     }
-    .stat-number {
-      font-size: 3em;
+    @media (max-width: 430px) {
+      .header h1 {
+        font-size: 2.5em;
+      }
+      .header p {
+        font-size: 1.1em;
+      }
+      .stat-card {
+        padding: 20px;
+      }
+      .stat-number {
+        font-size: 2em;
+      }
+      .btn {
+        padding: 12px 25px;
+        font-size: 14px;
+      }
+      .chart-title {
+        font-size: 1.1em;
+      }
+      .chart-wrapper, #totalChartWrapper {
+        min-height: 320px;
+      }
     }
-    .stat-label {
-      font-size: 1.1em;
+    @media (min-width: 1920px) {
+      body {
+        padding: 30px;
+      }
+      .container {
+        max-width: calc(100% - 60px);
+        margin: 70px auto 30px;
+      }
+      .topbar {
+        height: 70px;
+      }
+      .topbar-item i {
+        font-size: 24px;
+        margin-right: 12px;
+      }
+      .topbar-item {
+        font-size: 18px;
+        padding: 15px 25px;
+      }
+      .header h1 {
+        font-size: 3.5em;
+      }
+      .header p {
+        font-size: 1.5em;
+      }
+      .stat-card {
+        padding: 40px;
+      }
+      .stat-number {
+        font-size: 3em;
+      }
+      .stat-label {
+        font-size: 1.1em;
+      }
+      .chart-wrapper, #totalChartWrapper {
+        min-height: 550px;
+        padding: 30px;
+      }
+      .chart-title {
+        font-size: 2.2em;
+      }
     }
-    .chart-wrapper, #totalChartWrapper {
-      min-height: 500px;
-      padding: 30px;
+    @media (min-width: 2560px) {
+      body {
+        font-size: 18px;
+        padding: 40px;
+      }
+      .container {
+        max-width: 2200px;
+        margin: 80px auto 40px;
+      }
+      .topbar {
+        height: 80px;
+      }
+      .topbar-item {
+        font-size: 20px;
+        padding: 18px 30px;
+      }
+      .header h1 {
+        font-size: 4em;
+      }
+      .header p {
+        font-size: 1.8em;
+      }
+      .stats {
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 35px;
+      }
+      .stat-number {
+        font-size: 3.5em;
+      }
+      .chart-wrapper, #totalChartWrapper {
+        min-height: 600px;
+      }
+      .chart-title {
+        font-size: 2.5em;
+      }
     }
-    .chart-title {
-      font-size: 2.2em;
-    }
-  }
-
-  @media (min-width: 2560px) {
-    body {
-      font-size: 18px;
-      padding: 40px;
-    }
-    .container {
-      max-width: 2200px;
-      margin: 80px auto 40px;
-    }
-    .topbar {
-      height: 80px;
-    }
-    .topbar-item {
-      font-size: 20px;
-      padding: 18px 30px;
-    }
-    .header h1 {
-      font-size: 4em;
-    }
-    .header p {
-      font-size: 1.8em;
-    }
-    .stats {
-      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-      gap: 35px;
-    }
-    .stat-number {
-      font-size: 3.5em;
-    }
-    .chart-wrapper, #totalChartWrapper {
-      min-height: 600px;
-    }
-    .chart-title {
-      font-size: 2.5em;
-    }
-  }
-  /* --- END: Media Queries --- */
-
   </style>
 </head>
 <body>
   <div class="topbar">
-    <a href="index.html" class="topbar-item">
-      <i class="fas fa-home"></i>
-      <span>Home</span>
-    </a>
-    <a href="MainIncoming.html" class="topbar-item">
-      <i class="fas fa-network-wired"></i>
-      <span>Main Incoming</span>
-    </a>
+    <div class="topbar-items">
+      <a href="index.html" class="topbar-item">
+        <i class="fas fa-home"></i>
+        <span>Home</span>
+      </a>
+      <a href="MainIncoming.html" class="topbar-item">
+        <i class="fas fa-network-wired"></i>
+        <span>Main Incoming</span>
+      </a>
+    </div>
   </div>
   <div class="container">
     <div class="header">
@@ -744,8 +758,6 @@
     let allDatasets = [];
     let filteredData = null;
     let refreshInterval = null;
-    let countdownInterval = null;
-    let remainingTime = 15 * 60;
     let isTotalChartVisible = false;
     const colors = [
       '#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FECA57',
@@ -758,23 +770,25 @@
       building3: ['BD3_TR_MAIN']
     };
 
-    const fallbackData = [
-      "Timestamp,BD1_TR1_MAIN,BD1_TR2_MAIN,BD1_TR3_MAIN,BD2_TR1_MAIN,BD2_TR2_MAIN,BD2_TR3_MAIN,BD3_TR_MAIN",
-      "01/01/2025 00:00,50.5,45.3,48.2,60.1,58.7,59.4,70.2",
-      "01/01/2025 01:00,51.2,46.0,49.0,61.0,59.5,60.2,71.0",
-      "01/01/2025 02:00,52.0,46.8,49.8,61.8,60.3,61.0,71.8"
-    ].join('\n');
+    const fallbackData = `
+Timestamp,BD1_TR1_MAIN,BD1_TR2_MAIN,BD1_TR3_MAIN,BD2_TR1_MAIN,BD2_TR2_MAIN,BD2_TR3_MAIN,BD3_TR_MAIN
+01/01/2025 00:00,50.5,45.3,48.2,60.1,58.7,59.4,70.2
+01/01/2025 01:00,51.2,46.0,49.0,61.0,59.5,60.2,71.0
+01/01/2025 02:00,52.0,46.8,49.8,61.8,60.3,61.0,71.8
+`;
 
     function parseCustomDate(dateStr) {
       try {
         const [datePart, timePart] = dateStr.split(' ');
         if (!datePart || !timePart) throw new Error('Invalid date format: missing date or time');
-        const [day, month, year] = datePart.split('/');
-        if (!day || !month || !year) throw new Error('Invalid date format: incomplete date');
-        const formattedDate = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}T${timePart}`;
-        const date = new Date(formattedDate);
-        if (isNaN(date.getTime())) throw new Error('Invalid date format: cannot parse date');
-        return formattedDate;
+        const [day, month, year] = datePart.split('/').map(Number);
+        const [hour, minute] = timePart.split(':').map(Number);
+        if (isNaN(day) || isNaN(month) || isNaN(year) || isNaN(hour) || isNaN(minute)) {
+          throw new Error('Invalid date components');
+        }
+        const date = new Date(year, month - 1, day, hour, minute);
+        if (isNaN(date.getTime())) throw new Error('Invalid date format');
+        return date.toISOString();
       } catch (error) {
         console.error('Error parsing date:', dateStr, error);
         return null;
@@ -786,7 +800,6 @@
         console.warn('No data to filter');
         return data;
       }
-
       try {
         const latestTimestamp = new Date(parseCustomDate(data[data.length - 1][0]));
         if (isNaN(latestTimestamp.getTime())) {
@@ -794,12 +807,10 @@
           return data;
         }
         const cutoffTime = new Date(latestTimestamp.getTime() - (24 * 60 * 60 * 1000));
-
         const filtered = data.filter(row => {
           const timestamp = new Date(parseCustomDate(row[0]));
           return timestamp >= cutoffTime && !isNaN(timestamp.getTime());
         });
-
         return filtered.length > 0 ? filtered : data;
       } catch (error) {
         console.warn('Error filtering 24-hour data, using all data:', error);
@@ -807,13 +818,92 @@
       }
     }
 
+    function cacheData(data) {
+      try {
+        localStorage.setItem('cachedMainIncomingData', JSON.stringify(data));
+        localStorage.setItem('cacheMainIncomingTimestamp', Date.now());
+        console.log('Data cached successfully');
+      } catch (error) {
+        console.warn('Error caching data:', error);
+      }
+    }
+
+    function getCachedData() {
+      try {
+        const cached = localStorage.getItem('cachedMainIncomingData');
+        const timestamp = localStorage.getItem('cacheMainIncomingTimestamp');
+        if (cached && timestamp && Date.now() - parseInt(timestamp) < 15 * 60 * 1000) {
+          console.log('Using cached data');
+          return JSON.parse(cached);
+        }
+      } catch (error) {
+        console.warn('Error retrieving cached data:', error);
+      }
+      return null;
+    }
+
+    function showErrorModal(message) {
+      const existingModal = document.querySelector('.error-modal');
+      if (existingModal) existingModal.remove();
+      const modal = document.createElement('div');
+      modal.className = 'error-modal';
+      modal.innerHTML = `
+        ${message}
+        <button onclick="this.parentElement.remove()">Close</button>
+      `;
+      document.body.appendChild(modal);
+      setTimeout(() => modal.remove(), 10000);
+    }
+
+    async function fetchWithRetry(url, retries = 3, delay = 2000) {
+  let controller;
+  
+  for (let i = 0; i < retries; i++) {
+    controller = new AbortController();
+    
+    try {
+      const timeoutId = setTimeout(() => controller.abort(), 8000);
+
+      const response = await fetch(url, {
+        cache: 'no-store',
+        signal: controller.signal
+      });
+
+      clearTimeout(timeoutId);
+      
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      
+      return await response.text();
+    } catch (error) {
+      if (error.name === 'AbortError' && i < retries - 1) {
+        console.warn(`Attempt ${i+1} timed out, retrying...`);
+        await new Promise(r => setTimeout(r, delay));
+        continue;
+      }
+      if (i === retries - 1) throw error;
+    }
+  }
+}
+
     async function loadData() {
       const loadingElement = document.getElementById('loading');
       const chartElement = document.getElementById('myChart');
       loadingElement.innerHTML = '<div class="spinner"></div><div class="loading-text">Loading data...</div>';
 
-      const originalUrl = 'https://www.dropbox.com/scl/fi/7oh80bsupojeuw8s7x1nm/Main-Incoming.csv?rlkey=mdm9rwuvutyrfjyz7zmiq87ht&raw=1';
+      const cachedData = getCachedData();
+      if (cachedData) {
+        rawData = cachedData;
+        const last24HoursData = filterLast24Hours(cachedData.data);
+        filteredData = {
+          timestamps: last24HoursData.map(row => row[0]),
+          headers: cachedData.headers,
+          data: last24HoursData
+        };
+        processData();
+        return;
+      }
 
+      const originalUrl = 'https://www.dropbox.com/scl/fi/7oh80bsupojeuw8s7x1nm/Main-Incoming.csv?rlkey=mdm9rwuvutyrfjyz7zmiq87ht&raw=1';
       const proxyUrls = [
         'https://corsproxy.io/?',
         'https://api.allorigins.win/raw?url='
@@ -826,21 +916,20 @@
         const fullUrl = proxy + encodeURIComponent(originalUrl);
         try {
           console.log(`Trying to fetch data from: ${fullUrl}`);
-          const response = await fetch(fullUrl, { cache: 'no-store', signal: AbortSignal.timeout(8000) });
-          if (!response.ok) {
-            throw new Error(`HTTP error! Status: ${response.status}`);
-          }
-          csv = await response.text();
+          csv = await fetchWithRetry(fullUrl);
           successfulProxy = proxy;
           console.log(`Successfully fetched data using: ${successfulProxy}`);
           break;
         } catch (error) {
-          console.warn(`Failed to fetch from ${proxy}. Error:`, error.message, 'Trying next proxy...');
+          console.warn(`Failed to fetch from ${proxy}:`, error.message);
         }
       }
 
       if (!csv) {
         console.warn('All proxies failed. Using fallback data.');
+        loadingElement.innerHTML = `
+          <div class="spinner"></div>
+          <div class="loading-text">Using fallback data. <br>Click <a href="#" onclick="event.preventDefault(); loadData();">here</a> to retry.</div>`;
         csv = fallbackData;
       }
 
@@ -862,7 +951,7 @@
         const data = lines.slice(1).map(line => {
           const values = line.split(',');
           if (values.length !== headers.length) {
-            console.warn('Invalid row length, skipping:', line);
+            console.warn(`Row length mismatch: expected ${headers.length}, got ${values.length}, skipping row: ${line}`);
             return null;
           }
           return values;
@@ -872,53 +961,62 @@
           throw new Error('No valid data rows found');
         }
 
-        rawData = { timestamps: data.map(row => row[0]), headers: headers, data };
+        rawData = { timestamps: data.map(row => row[0]), headers, data };
+        cacheData(rawData);
 
         const last24HoursData = filterLast24Hours(data);
         filteredData = {
           timestamps: last24HoursData.map(row => row[0]),
-          headers: headers,
+          headers,
           data: last24HoursData
         };
 
-        allDatasets = [];
-        for (let i = 1; i < headers.length; i++) {
-          const label = headers[i];
-          const color = colors[(i - 1) % colors.length];
-          const values = last24HoursData.map(row => {
-            const value = parseFloat(row[i]);
-            return isNaN(value) ? 0 : value;
-          });
-          allDatasets.push({
-            label: label,
-            data: values,
-            borderColor: color,
-            backgroundColor: color + '20',
-            borderWidth: 3,
-            fill: false,
-            tension: 0.4,
-            pointRadius: 0,
-            pointHoverRadius: 6,
-            pointHoverBackgroundColor: color,
-            pointHoverBorderColor: '#fff',
-            pointHoverBorderWidth: 3
-          });
-        }
-
-        createFilters();
-        updateStats();
-        createChart();
-        if (isTotalChartVisible) {
-          createTotalChart();
-        }
-        loadingElement.style.display = 'none';
-        chartElement.style.display = 'block';
-
+        processData();
       } catch (error) {
-        console.error('Error loading data after all fallbacks:', error);
-        loadingElement.innerHTML =
-          `<div class="spinner"></div><div class="loading-text">Error: ${error.message}. <br>Click <a href="#" onclick="loadData()">here</a> to retry.</div>`;
+        console.error('Error loading data:', error);
+        loadingElement.innerHTML = `
+          <div class="spinner"></div>
+          <div class="loading-text">Error: ${error.message}. <br>Click <a href="#" onclick="event.preventDefault(); loadData();">here</a> to retry.</div>`;
+        showErrorModal(`Failed to load data: ${error.message}`);
       }
+    }
+
+    function processData() {
+      const loadingElement = document.getElementById('loading');
+      const chartElement = document.getElementById('myChart');
+
+      allDatasets = [];
+      for (let i = 1; i < filteredData.headers.length; i++) {
+        const label = filteredData.headers[i];
+        const color = colors[(i - 1) % colors.length];
+        const values = filteredData.data.map(row => {
+          const value = parseFloat(row[i]);
+          return isNaN(value) ? 0 : value;
+        });
+        allDatasets.push({
+          label,
+          data: values,
+          borderColor: color,
+          backgroundColor: color + '20',
+          borderWidth: 3,
+          fill: false,
+          tension: 0.4,
+          pointRadius: 0,
+          pointHoverRadius: 6,
+          pointHoverBackgroundColor: color,
+          pointHoverBorderColor: '#fff',
+          pointHoverBorderWidth: 3
+        });
+      }
+
+      createFilters();
+      updateStats();
+      createChart();
+      if (isTotalChartVisible) {
+        createTotalChart();
+      }
+      loadingElement.style.display = 'none';
+      chartElement.style.display = 'block';
     }
 
     function createFilters() {
@@ -1007,7 +1105,6 @@
       for (let i = 1; i < filteredData.headers.length; i++) {
         const headerName = filteredData.headers[i].trim();
         const value = parseFloat(latestData[i]) || 0;
-
         if (buildingGroups.building1.includes(headerName)) {
           building1Total += value;
         } else if (buildingGroups.building2.includes(headerName)) {
@@ -1029,17 +1126,34 @@
         console.warn(`Element with ID ${elementId} not found`);
         return;
       }
-      const currentValue = parseFloat(element.textContent) || 0;
-      const increment = (targetValue - currentValue) / 30;
-      let current = currentValue;
-      const timer = setInterval(() => {
-        current += increment;
-        if ((increment > 0 && current >= targetValue) || (increment < 0 && current <= targetValue)) {
-          current = targetValue;
-          clearInterval(timer);
+      const startValue = parseFloat(element.textContent) || 0;
+      const duration = 500;
+      const startTime = performance.now();
+
+      function step(currentTime) {
+        const elapsed = currentTime - startTime;
+        const progress = Math.min(elapsed / duration, 1);
+        const value = startValue + (targetValue - startValue) * progress;
+        element.textContent = value.toFixed(1);
+        if (progress < 1) {
+          requestAnimationFrame(step);
         }
-        element.textContent = current.toFixed(1);
-      }, 16);
+      }
+
+      requestAnimationFrame(step);
+    }
+
+    function destroyChart(instance, name) {
+      if (instance) {
+        try {
+          instance.destroy();
+          console.log(`${name} chart destroyed successfully`);
+        } catch (err) {
+          console.warn(`Error destroying ${name} chart:`, err);
+        }
+      } else {
+        console.warn(`${name} chart instance not found`);
+      }
     }
 
     function createChart() {
@@ -1048,11 +1162,7 @@
         console.error('Canvas context not found');
         return;
       }
-      try {
-        if (chartInstance) chartInstance.destroy();
-      } catch (err) {
-        console.warn('Chart destroy error:', err);
-      }
+      destroyChart(chartInstance, 'Main');
       chartInstance = new Chart(ctx, {
         type: 'line',
         data: {
@@ -1211,12 +1321,7 @@
         console.error('Total chart canvas context not found');
         return;
       }
-      try {
-        if (totalChartInstance) totalChartInstance.destroy();
-      } catch (err) {
-        console.warn('Total Chart destroy error:', err);
-      }
-
+      destroyChart(totalChartInstance, 'Total');
       const { building1Total, building2Total, building3Total, currentTotal } = calculateTotalData();
 
       totalChartInstance = new Chart(ctx, {
@@ -1409,36 +1514,31 @@
     }
 
     function selectAll() {
-      const checkboxes = document.querySelectorAll('input[type="checkbox"]');
-      checkboxes.forEach(cb => cb.checked = true);
+      document.querySelectorAll('input[type="checkbox"]').forEach(cb => cb.checked = true);
       updateChart();
     }
 
     function deselectAll() {
-      const checkboxes = document.querySelectorAll('input[type="checkbox"]');
-      checkboxes.forEach(cb => cb.checked = false);
+      document.querySelectorAll('input[type="checkbox"]').forEach(cb => cb.checked = false);
       updateChart();
     }
 
     function selectBuilding1() {
-      const checkboxes = document.querySelectorAll('input[type="checkbox"]');
-      checkboxes.forEach((cb, index) => {
+      document.querySelectorAll('input[type="checkbox"]').forEach((cb, index) => {
         cb.checked = buildingGroups.building1.includes(allDatasets[index]?.label);
       });
       updateChart();
     }
 
     function selectBuilding2() {
-      const checkboxes = document.querySelectorAll('input[type="checkbox"]');
-      checkboxes.forEach((cb, index) => {
+      document.querySelectorAll('input[type="checkbox"]').forEach((cb, index) => {
         cb.checked = buildingGroups.building2.includes(allDatasets[index]?.label);
       });
       updateChart();
     }
 
     function selectBuilding3() {
-      const checkboxes = document.querySelectorAll('input[type="checkbox"]');
-      checkboxes.forEach((cb, index) => {
+      document.querySelectorAll('input[type="checkbox"]').forEach((cb, index) => {
         cb.checked = buildingGroups.building3.includes(allDatasets[index]?.label);
       });
       updateChart();
@@ -1446,124 +1546,101 @@
 
     function exportCSV() {
       if (!rawData) {
-        console.warn('No raw data to export');
-        alert('No data available to export.');
+        showErrorModal('No data available to export.');
         return;
       }
       const activeColumns = [0];
-      const checkboxes = document.querySelectorAll('input[type="checkbox"]');
-      checkboxes.forEach((cb, index) => {
+      document.querySelectorAll('input[type="checkbox"]').forEach((cb, index) => {
         if (cb.checked) activeColumns.push(index + 1);
       });
 
-      let csvContent = '';
-      const headers = activeColumns.map(i => rawData.headers[i]);
-      csvContent += headers.join(',') + '\n';
+      let csvContent = rawData.headers.filter((_, i) => activeColumns.includes(i)).join(',') + '\n';
       rawData.data.forEach(row => {
-        const activeRow = activeColumns.map(i => row[i]);
-        csvContent += activeRow.join(',') + '\n';
+        csvContent += row.filter((_, i) => activeColumns.includes(i)).join(',') + '\n';
       });
 
       const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
       const link = document.createElement('a');
-      const url = URL.createObjectURL(blob);
-      link.setAttribute('href', url);
-      link.setAttribute('download', `power_data_${new Date().toISOString().split('T')[0]}.csv`);
-      link.style.visibility = 'hidden';
+      link.href = URL.createObjectURL(blob);
+      link.download = `power_data_${new Date().toISOString().split('T')[0]}.csv`;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
     }
 
     function exportPNG() {
-      if (!chartInstance) {
-        console.warn('No main chart instance to export');
-        alert('No main chart available to export.');
-        return;
-      }
-      const date = new Date().toISOString().split('T')[0];
-      let canvas = document.createElement('canvas');
-      let ctx = canvas.getContext('2d');
-      const mainChartCanvas = chartInstance.canvas;
-      canvas.width = mainChartCanvas.width;
-      canvas.height = mainChartCanvas.height;
+  const canvases = [];
+  if (chartInstance) {
+    canvases.push({ canvas: chartInstance.canvas, name: 'power_chart' });
+  }
+  if (isTotalChartVisible && totalChartInstance) {
+    canvases.push({ canvas: totalChartInstance.canvas, name: 'total_power_chart' });
+  }
 
-      ctx.fillStyle = 'white';
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
-      ctx.drawImage(mainChartCanvas, 0, 0);
+  if (canvases.length === 0) {
+    showErrorModal('No chart available to export.');
+    return;
+  }
 
-      let link = document.createElement('a');
-      link.download = `power_chart_${date}.png`;
-      link.href = canvas.toDataURL('image/png');
-      link.style.visibility = 'hidden';
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
+  // อัตราส่วนการขยาย (เช่น 2x resolution)
+  const scale = 2;
 
-      if (isTotalChartVisible && totalChartInstance) {
-        canvas = document.createElement('canvas');
-        ctx = canvas.getContext('2d');
-        const totalChartCanvas = totalChartInstance.canvas;
-        canvas.width = totalChartCanvas.width;
-        canvas.height = totalChartCanvas.height;
+  canvases.forEach(item => {
+    // สร้าง canvas ใหม่ขนาดใหญ่ขึ้น
+    const tempCanvas = document.createElement('canvas');
+    const originalWidth = item.canvas.width;
+    const originalHeight = item.canvas.height;
 
-        ctx.fillStyle = 'white';
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
-        ctx.drawImage(totalChartCanvas, 0, 0);
+    tempCanvas.width = originalWidth * scale;
+    tempCanvas.height = originalHeight * scale;
 
-        link = document.createElement('a');
-        link.download = `total_power_chart_${date}.png`;
-        link.href = canvas.toDataURL('image/png');
-        link.style.visibility = 'hidden';
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-      }
-    }
+    const tempCtx = tempCanvas.getContext('2d');
+
+    // ตั้งค่าคุณภาพสูง
+    tempCtx.setTransform(scale, 0, 0, scale, 0, 0);
+    tempCtx.fillStyle = 'white';
+    tempCtx.fillRect(0, 0, originalWidth, originalHeight);
+
+    // วาดภาพจาก canvas เดิม
+    tempCtx.drawImage(item.canvas, 0, 0);
+
+    // รีเซ็ต transform
+    tempCtx.setTransform(1, 0, 0, 1, 0, 0);
+
+    // สร้างลิงก์และดาวน์โหลด
+    const link = document.createElement('a');
+    link.download = `${item.name}_${new Date().toISOString().split('T')[0]}.png`;
+    link.href = tempCanvas.toDataURL('image/png', 1.0); // คุณภาพ 100%
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  });
+}
 
     function startAutoRefresh() {
       if (refreshInterval) clearInterval(refreshInterval);
-      if (countdownInterval) clearInterval(countdownInterval);
       refreshInterval = setInterval(loadData, 15 * 60 * 1000);
-      remainingTime = 15 * 60;
-      updateCountdown();
-      countdownInterval = setInterval(updateCountdown, 1000);
     }
 
-    function updateCountdown() {
-      const minutes = Math.floor(remainingTime / 60);
-      const seconds = remainingTime % 60;
-      const countdownElement = document.getElementById('countdown');
-      if (countdownElement) {
-        countdownElement.textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
-      }
-      remainingTime--;
-      if (remainingTime < 0) remainingTime = 15 * 60;
-    }
-
-    document.addEventListener('DOMContentLoaded', function () {
-      console.log('DOM loaded, starting data load');
+    document.addEventListener('DOMContentLoaded', () => {
       document.body.style.opacity = '0';
       setTimeout(() => {
         document.body.style.transition = 'opacity 0.5s ease';
         document.body.style.opacity = '1';
       }, 100);
       loadData().then(() => {
-        console.log('Data loaded successfully, starting auto refresh');
         startAutoRefresh();
       }).catch(error => {
         console.error('Initial data load failed:', error);
-        const loadingElement = document.getElementById('loading');
-        loadingElement.innerHTML =
-          `<div class="spinner"></div><div class="loading-text">Error: ${error.message}. <br>Click <a href="#" onclick="loadData()">here</a> to retry.</div>`;
+        document.getElementById('loading').innerHTML = `
+          <div class="spinner"></div>
+          <div class="loading-text">Error: ${error.message}. <br>Click <a href="#" onclick="event.preventDefault(); loadData();">here</a> to retry.</div>`;
+        showErrorModal(`Initial data load failed: ${error.message}`);
       });
     });
 
-    document.addEventListener("contextmenu", function(e) {
-      e.preventDefault();
-    });
-
-    document.addEventListener("keydown", function(e) {
+    document.addEventListener("contextmenu", e => e.preventDefault());
+    document.addEventListener("keydown", e => {
       if ((e.ctrlKey && ['c', 'x', 'u', 's', 'p'].includes(e.key.toLowerCase())) || e.key === "F12") {
         e.preventDefault();
       }
