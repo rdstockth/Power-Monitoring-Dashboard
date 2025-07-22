@@ -1,12 +1,19 @@
 <!DOCTYPE html>
-<html lang="th">
+<html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Chiller & Air Compressor Dashboard</title>
-  <link rel="preload" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" as="style" onload="this.onload=null;this.rel='stylesheet'">
-  <noscript><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css"></noscript>
-  <script src="https://cdn.jsdelivr.net/npm/chart.js" defer></script>
+ <meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Main Incoming Power Dashboard</title>
+
+<!-- Font Awesome with lazy load -->
+<link rel="preload" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css " as="style" onload="this.onload=null;this.rel='stylesheet'">
+<noscript><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css "></noscript>
+
+<!-- Preload Chart.js -->
+<link rel="preload" href="https://cdn.jsdelivr.net/npm/chart.js " as="script" crossorigin>
+
+<!-- Load Chart.js deferred -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js " defer crossorigin></script>
 
 <style>
   * {
@@ -26,7 +33,7 @@
   }
   .container {
     max-width: 100%;
-    margin-top: 60px; /* Adjusted for top bar */
+    margin-top: 60px;
     background: rgba(255, 255, 255, 0.1);
     backdrop-filter: blur(20px);
     border-radius: 30px;
@@ -357,7 +364,7 @@
     box-shadow: 0 5px 20px rgba(76, 175, 80, 0.3);
   }
   .btn-info {
-    background: linear-gradient(135deg, #2196f3, #21cbf3);
+    background: linear-gradient(135deg, #6633FF, #66CCFF);
     color: white;
     box-shadow: 0 5px 20px rgba(33, 150, 123, 0.3);
   }
@@ -388,9 +395,6 @@
   .btn:active, .btn-deselect-all:active, .btn-expand-data:active {
     transform: translateY(-1px);
   }
-
-
-
   .chart-container {
     padding: 10px 20px;
     background: linear-gradient(135deg, #fff 0%, #f8f9fa 100%);
@@ -451,15 +455,36 @@
     0% { transform: rotate(0deg); }
     100% { transform: rotate(360deg); }
   }
-
-  /* --- START: Media Queries --- */
+  .error-modal {
+    position: fixed;
+    top: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: #f44336;
+    color: white;
+    padding: 15px;
+    border-radius: 8px;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+    z-index: 10000;
+    display: flex;
+    gap: 10px;
+    align-items: center;
+  }
+  .error-modal button {
+    padding: 8px 16px;
+    border: none;
+    border-radius: 4px;
+    background: #fff;
+    color: #f44336;
+    cursor: pointer;
+    font-weight: 600;
+  }
   @media (max-width: 1012px) {
     .chart-wrapper, #totalChartWrapper {
-      min-height: 450px;
+      min-height: 420px;
       padding: 20px;
     }
   }
-
   @media (max-width: 768px) {
     .topbar {
       height: 50px;
@@ -499,7 +524,6 @@
       text-align: center;
     }
   }
-
   @media (max-width: 480px) {
     .chart-title {
       font-size: 1.2em;
@@ -508,7 +532,6 @@
       min-height: 350px;
     }
   }
-
   @media (max-width: 430px) {
     .header h1 {
       font-size: 2.5em;
@@ -533,7 +556,6 @@
       min-height: 320px;
     }
   }
-
   @media (min-width: 1920px) {
     body {
       padding: 30px;
@@ -576,7 +598,6 @@
       font-size: 2.2em;
     }
   }
-
   @media (min-width: 2560px) {
     body {
       font-size: 18px;
@@ -613,11 +634,6 @@
       font-size: 2.5em;
     }
   }
-  /* --- END: Media Queries --- */
-
-
-
-
 </style>
 </head>
 <body>
@@ -711,15 +727,12 @@
   </div>
 
   <script>
-    // JavaScript remains unchanged
     let chartInstance = null;
     let totalChartInstance = null;
     let rawData = null;
     let allDatasets = [];
     let filteredData = null;
     let refreshInterval = null;
-    let countdownInterval = null;
-    let remainingTime = 15 * 60;
     let isTotalChartVisible = false;
     const colors = [
       '#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FECA57',
@@ -728,23 +741,25 @@
     ];
     const compressorMeters = ['BD2_GA90_VSD', 'BD1_COMP_AIR_GA90_2', 'BD1_COMP_AIR_GA90_1'];
 
-    const fallbackData = [
-      "Timestamp,BD2_GA90_VSD,BD1_COMP_AIR_GA90_2,BD1_COMP_AIR_GA90_1,CHILLER_1",
-      "01/01/2025 00:00,10.5,12.3,11.8,15.2",
-      "01/01/2025 01:00,10.7,12.5,11.9,15.4",
-      "01/01/2025 02:00,10.8,12.6,12.0,15.6"
-    ].join('\n');
+    const fallbackData = `
+Timestamp,BD2_GA90_VSD,BD1_COMP_AIR_GA90_2,BD1_COMP_AIR_GA90_1,CHILLER_1
+01/01/2025 00:00,10.5,12.3,11.8,15.2
+01/01/2025 01:00,10.7,12.5,11.9,15.4
+01/01/2025 02:00,10.8,12.6,12.0,15.6
+`;
 
     function parseCustomDate(dateStr) {
       try {
         const [datePart, timePart] = dateStr.split(' ');
         if (!datePart || !timePart) throw new Error('Invalid date format: missing date or time');
-        const [day, month, year] = datePart.split('/');
-        if (!day || !month || !year) throw new Error('Invalid date format: incomplete date');
-        const formattedDate = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}T${timePart}`;
-        const date = new Date(formattedDate);
-        if (isNaN(date.getTime())) throw new Error('Invalid date format: cannot parse date');
-        return formattedDate;
+        const [day, month, year] = datePart.split('/').map(Number);
+        const [hour, minute] = timePart.split(':').map(Number);
+        if (isNaN(day) || isNaN(month) || isNaN(year) || isNaN(hour) || isNaN(minute)) {
+          throw new Error('Invalid date components');
+        }
+        const date = new Date(year, month - 1, day, hour, minute);
+        if (isNaN(date.getTime())) throw new Error('Invalid date format');
+        return date.toISOString();
       } catch (error) {
         console.error('Error parsing date:', dateStr, error);
         return null;
@@ -756,7 +771,6 @@
         console.warn('No data to filter');
         return data;
       }
-
       try {
         const latestTimestamp = new Date(parseCustomDate(data[data.length - 1][0]));
         if (isNaN(latestTimestamp.getTime())) {
@@ -764,12 +778,10 @@
           return data;
         }
         const cutoffTime = new Date(latestTimestamp.getTime() - (24 * 60 * 60 * 1000));
-
         const filtered = data.filter(row => {
           const timestamp = new Date(parseCustomDate(row[0]));
           return timestamp >= cutoffTime && !isNaN(timestamp.getTime());
         });
-
         return filtered.length > 0 ? filtered : data;
       } catch (error) {
         console.warn('Error filtering 24-hour data, using all data:', error);
@@ -777,13 +789,93 @@
       }
     }
 
+    function cacheData(data) {
+      try {
+        localStorage.setItem('cachedData', JSON.stringify(data));
+        localStorage.setItem('cacheTimestamp', Date.now());
+        console.log('Data cached successfully');
+      } catch (error) {
+        console.warn('Error caching data:', error);
+      }
+    }
+
+    function getCachedData() {
+      try {
+        const cached = localStorage.getItem('cachedData');
+        const timestamp = localStorage.getItem('cacheTimestamp');
+        if (cached && timestamp && Date.now() - parseInt(timestamp) < 15 * 60 * 1000) {
+          console.log('Using cached data');
+          return JSON.parse(cached);
+        }
+      } catch (error) {
+        console.warn('Error retrieving cached data:', error);
+      }
+      return null;
+    }
+
+    function showErrorModal(message) {
+      const existingModal = document.querySelector('.error-modal');
+      if (existingModal) existingModal.remove();
+      const modal = document.createElement('div');
+      modal.className = 'error-modal';
+      modal.innerHTML = `
+        ${message}
+        <button onclick="this.parentElement.remove()">Close</button>
+      `;
+      document.body.appendChild(modal);
+      setTimeout(() => modal.remove(), 10000); // Auto-close after 10 seconds
+    }
+
+    async function fetchWithRetry(url, retries = 3, delay = 2000) {
+  let controller;
+  
+  for (let i = 0; i < retries; i++) {
+    controller = new AbortController();
+    
+    try {
+      const timeoutId = setTimeout(() => controller.abort(), 8000);
+
+      const response = await fetch(url, {
+        cache: 'no-store',
+        signal: controller.signal
+      });
+
+      clearTimeout(timeoutId);
+      
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      
+      return await response.text();
+    } catch (error) {
+      if (error.name === 'AbortError' && i < retries - 1) {
+        console.warn(`Attempt ${i+1} timed out, retrying...`);
+        await new Promise(r => setTimeout(r, delay));
+        continue;
+      }
+      if (i === retries - 1) throw error;
+    }
+  }
+}
+
     async function loadData() {
       const loadingElement = document.getElementById('loading');
       const chartElement = document.getElementById('myChart');
       loadingElement.innerHTML = '<div class="spinner"></div><div class="loading-text">Loading data...</div>';
 
-      const originalUrl = 'https://www.dropbox.com/scl/fi/ujzaectxfzcd572a1ehb4/Chiller_Compress_Air.csv?rlkey=0myy02d0l5kfz8xxzkk7s011r&raw=1';
+      // Check cached data first
+      const cachedData = getCachedData();
+      if (cachedData) {
+        rawData = cachedData;
+        const last24HoursData = filterLast24Hours(cachedData.data);
+        filteredData = {
+          timestamps: last24HoursData.map(row => row[0]),
+          headers: cachedData.headers,
+          data: last24HoursData
+        };
+        processData();
+        return;
+      }
 
+      const originalUrl = 'https://www.dropbox.com/scl/fi/ujzaectxfzcd572a1ehb4/Chiller_Compress_Air.csv?rlkey=0myy02d0l5kfz8xxzkk7s011r&raw=1';
       const proxyUrls = [
         'https://corsproxy.io/?',
         'https://api.allorigins.win/raw?url='
@@ -796,21 +888,20 @@
         const fullUrl = proxy + encodeURIComponent(originalUrl);
         try {
           console.log(`Trying to fetch data from: ${fullUrl}`);
-          const response = await fetch(fullUrl, { cache: 'no-store', signal: AbortSignal.timeout(8000) });
-          if (!response.ok) {
-            throw new Error(`HTTP error! Status: ${response.status}`);
-          }
-          csv = await response.text();
+          csv = await fetchWithRetry(fullUrl);
           successfulProxy = proxy;
           console.log(`Successfully fetched data using: ${successfulProxy}`);
           break;
         } catch (error) {
-          console.warn(`Failed to fetch from ${proxy}. Error:`, error.message, 'Trying next proxy...');
+          console.warn(`Failed to fetch from ${proxy}:`, error.message);
         }
       }
 
       if (!csv) {
         console.warn('All proxies failed. Using fallback data.');
+        loadingElement.innerHTML = `
+          <div class="spinner"></div>
+          <div class="loading-text">Using fallback data. <br>Click <a href="#" onclick="event.preventDefault(); loadData();">here</a> to retry.</div>`;
         csv = fallbackData;
       }
 
@@ -832,7 +923,7 @@
         const data = lines.slice(1).map(line => {
           const values = line.split(',');
           if (values.length !== headers.length) {
-            console.warn('Invalid row length, skipping:', line);
+            console.warn(`Row length mismatch: expected ${headers.length}, got ${values.length}, skipping row: ${line}`);
             return null;
           }
           return values;
@@ -842,53 +933,62 @@
           throw new Error('No valid data rows found');
         }
 
-        rawData = { timestamps: data.map(row => row[0]), headers: headers, data };
+        rawData = { timestamps: data.map(row => row[0]), headers, data };
+        cacheData(rawData);
 
         const last24HoursData = filterLast24Hours(data);
         filteredData = {
           timestamps: last24HoursData.map(row => row[0]),
-          headers: headers,
+          headers,
           data: last24HoursData
         };
 
-        allDatasets = [];
-        for (let i = 1; i < headers.length; i++) {
-          const label = headers[i];
-          const color = colors[(i - 1) % colors.length];
-          const values = last24HoursData.map(row => {
-            const value = parseFloat(row[i]);
-            return isNaN(value) ? 0 : value;
-          });
-          allDatasets.push({
-            label: label,
-            data: values,
-            borderColor: color,
-            backgroundColor: color + '20',
-            borderWidth: 3,
-            fill: false,
-            tension: 0.4,
-            pointRadius: 0,
-            pointHoverRadius: 6,
-            pointHoverBackgroundColor: color,
-            pointHoverBorderColor: '#fff',
-            pointHoverBorderWidth: 3
-          });
-        }
-
-        createFilters();
-        updateStats();
-        createChart();
-        if (isTotalChartVisible) {
-          createTotalChart();
-        }
-        loadingElement.style.display = 'none';
-        chartElement.style.display = 'block';
-
+        processData();
       } catch (error) {
-        console.error('Error loading data after all fallbacks:', error);
-        loadingElement.innerHTML =
-          `<div class="spinner"></div><div class="loading-text">Error: ${error.message}. <br>Unable to load data from all sources.</div>`;
+        console.error('Error loading data:', error);
+        loadingElement.innerHTML = `
+          <div class="spinner"></div>
+          <div class="loading-text">Error: ${error.message}. <br>Click <a href="#" onclick="event.preventDefault(); loadData();">here</a> to retry.</div>`;
+        showErrorModal(`Failed to load data: ${error.message}`);
       }
+    }
+
+    function processData() {
+      const loadingElement = document.getElementById('loading');
+      const chartElement = document.getElementById('myChart');
+
+      allDatasets = [];
+      for (let i = 1; i < filteredData.headers.length; i++) {
+        const label = filteredData.headers[i];
+        const color = colors[(i - 1) % colors.length];
+        const values = filteredData.data.map(row => {
+          const value = parseFloat(row[i]);
+          return isNaN(value) ? 0 : value;
+        });
+        allDatasets.push({
+          label,
+          data: values,
+          borderColor: color,
+          backgroundColor: color + '20',
+          borderWidth: 3,
+          fill: false,
+          tension: 0.4,
+          pointRadius: 0,
+          pointHoverRadius: 6,
+          pointHoverBackgroundColor: color,
+          pointHoverBorderColor: '#fff',
+          pointHoverBorderWidth: 3
+        });
+      }
+
+      createFilters();
+      updateStats();
+      createChart();
+      if (isTotalChartVisible) {
+        createTotalChart();
+      }
+      loadingElement.style.display = 'none';
+      chartElement.style.display = 'block';
     }
 
     function createFilters() {
@@ -976,7 +1076,6 @@
       for (let i = 1; i < filteredData.headers.length; i++) {
         const headerName = filteredData.headers[i].trim();
         const value = parseFloat(latestData[i]) || 0;
-
         if (compressorMeters.includes(headerName)) {
           compressorTotal += value;
         } else if (headerName.toLowerCase().includes('chiller') || headerName.toLowerCase().includes('chill')) {
@@ -1005,7 +1104,6 @@
         const progress = Math.min(elapsed / duration, 1);
         const value = startValue + (targetValue - startValue) * progress;
         element.textContent = value.toFixed(1);
-
         if (progress < 1) {
           requestAnimationFrame(step);
         }
@@ -1014,17 +1112,26 @@
       requestAnimationFrame(step);
     }
 
+    function destroyChart(instance, name) {
+      if (instance) {
+        try {
+          instance.destroy();
+          console.log(`${name} chart destroyed successfully`);
+        } catch (err) {
+          console.warn(`Error destroying ${name} chart:`, err);
+        }
+      } else {
+        console.warn(`${name} chart instance not found`);
+      }
+    }
+
     function createChart() {
       const ctx = document.getElementById('myChart')?.getContext('2d');
       if (!ctx) {
         console.error('Canvas context not found');
         return;
       }
-      try {
-        if (chartInstance) chartInstance.destroy();
-      } catch (err) {
-        console.warn('Chart destroy error:', err);
-      }
+      destroyChart(chartInstance, 'Main');
       chartInstance = new Chart(ctx, {
         type: 'line',
         data: {
@@ -1177,12 +1284,7 @@
         console.error('Total chart canvas context not found');
         return;
       }
-      try {
-        if (totalChartInstance) totalChartInstance.destroy();
-      } catch (err) {
-        console.warn('Total Chart destroy error:', err);
-      }
-
+      destroyChart(totalChartInstance, 'Total');
       const { compressorTotal, chillerTotal, currentTotal } = calculateTotalData();
 
       totalChartInstance = new Chart(ctx, {
@@ -1387,7 +1489,7 @@
 
     function exportCSV() {
       if (!rawData) {
-        alert('No data available to export.');
+        showErrorModal('No data available to export.');
         return;
       }
       const activeColumns = [0];
@@ -1410,37 +1512,53 @@
     }
 
     function exportPNG() {
-      const canvases = [];
-      if (chartInstance) {
-        canvases.push({ canvas: chartInstance.canvas, name: 'power_chart' });
-      }
-      if (isTotalChartVisible && totalChartInstance) {
-        canvases.push({ canvas: totalChartInstance.canvas, name: 'total_power_chart' });
-      }
+  const canvases = [];
+  if (chartInstance) {
+    canvases.push({ canvas: chartInstance.canvas, name: 'power_chart' });
+  }
+  if (isTotalChartVisible && totalChartInstance) {
+    canvases.push({ canvas: totalChartInstance.canvas, name: 'total_power_chart' });
+  }
 
-      if (canvases.length === 0) {
-        alert('No chart available to export.');
-        return;
-      }
+  if (canvases.length === 0) {
+    showErrorModal('No chart available to export.');
+    return;
+  }
 
-      canvases.forEach(item => {
-        const tempCanvas = document.createElement('canvas');
-        const tempCtx = tempCanvas.getContext('2d');
-        tempCanvas.width = item.canvas.width;
-        tempCanvas.height = item.canvas.height;
-        
-        tempCtx.fillStyle = 'white';
-        tempCtx.fillRect(0, 0, tempCanvas.width, tempCanvas.height);
-        tempCtx.drawImage(item.canvas, 0, 0);
+  // อัตราส่วนการขยาย (เช่น 2x resolution)
+  const scale = 2;
 
-        const link = document.createElement('a');
-        link.download = `${item.name}_${new Date().toISOString().split('T')[0]}.png`;
-        link.href = tempCanvas.toDataURL('image/png');
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-      });
-    }
+  canvases.forEach(item => {
+    // สร้าง canvas ใหม่ขนาดใหญ่ขึ้น
+    const tempCanvas = document.createElement('canvas');
+    const originalWidth = item.canvas.width;
+    const originalHeight = item.canvas.height;
+
+    tempCanvas.width = originalWidth * scale;
+    tempCanvas.height = originalHeight * scale;
+
+    const tempCtx = tempCanvas.getContext('2d');
+
+    // ตั้งค่าคุณภาพสูง
+    tempCtx.setTransform(scale, 0, 0, scale, 0, 0);
+    tempCtx.fillStyle = 'white';
+    tempCtx.fillRect(0, 0, originalWidth, originalHeight);
+
+    // วาดภาพจาก canvas เดิม
+    tempCtx.drawImage(item.canvas, 0, 0);
+
+    // รีเซ็ต transform
+    tempCtx.setTransform(1, 0, 0, 1, 0, 0);
+
+    // สร้างลิงก์และดาวน์โหลด
+    const link = document.createElement('a');
+    link.download = `${item.name}_${new Date().toISOString().split('T')[0]}.png`;
+    link.href = tempCanvas.toDataURL('image/png', 1.0); // คุณภาพ 100%
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  });
+}
 
     function startAutoRefresh() {
       if (refreshInterval) clearInterval(refreshInterval);
@@ -1457,8 +1575,10 @@
         startAutoRefresh();
       }).catch(error => {
         console.error('Initial data load failed:', error);
-        document.getElementById('loading').innerHTML =
-          `<div class="spinner"></div><div class="loading-text">Error: ${error.message}. <br>Click <a href="#" onclick="event.preventDefault(); loadData();">here</a> to retry.</div>`;
+        document.getElementById('loading').innerHTML = `
+          <div class="spinner"></div>
+          <div class="loading-text">Error: ${error.message}. <br>Click <a href="#" onclick="event.preventDefault(); loadData();">here</a> to retry.</div>`;
+        showErrorModal(`Initial data load failed: ${error.message}`);
       });
     });
 
