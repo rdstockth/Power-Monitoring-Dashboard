@@ -1,0 +1,1645 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+ <meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Power Monitoring Dashboard</title>
+
+<!-- Font Awesome with lazy load -->
+<link rel="preload" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.1/css/all.min.css" as="style" onload="this.onload=null;this.rel='stylesheet'">
+<noscript><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.1/css/all.min.css"></noscript>
+
+<!-- Preload Chart.js -->
+<link rel="preload" href="https://cdn.jsdelivr.net/npm/chart.js" as="script" crossorigin>
+
+<!-- Load Chart.js deferred -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js" defer crossorigin></script>
+
+<style>
+  * {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+  }
+  body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: linear-gradient(105deg, #66FF99 0%, #FFFF99 100%);
+    min-height: 100vh;
+    padding: 20px;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+  }
+  .container {
+    max-width: 100%;
+    margin-top: 60px;
+    background: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(20px);
+    border-radius: 30px;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    box-shadow: 0 30px 60px rgba(0, 0, 0, 0.15);
+    overflow: hidden;
+    position: relative;
+  }
+  .container::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.8), transparent);
+    animation: shimmer 2s infinite;
+  }
+  @keyframes shimmer {
+    0% { transform: translateX(-100%); }
+    100% { transform: translateX(100%); }
+  }
+  .header {
+    background: linear-gradient(135deg, #256eff 0%, #6fd0ff 100%);
+    padding: 40px 30px 20px;
+    text-align: center;
+    color: white;
+    position: relative;
+    overflow: hidden;
+  }
+  .header::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="grid" width="10" height="10" patternUnits="userSpaceOnUse"><path d="M 10 0 L 0 0 0 10" fill="none" stroke="rgba(255,255,255,0.1)" stroke-width="0.5"/></pattern></defs><rect width="100" height="100" fill="url(%23grid)"/></svg>');
+    opacity: 0.4;
+    box-shadow: inset 0 0 10px rgba(255, 255, 255, 0.2);
+  }
+  .header h1 {
+    font-size: 3em;
+    margin-bottom: 15px;
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0);
+    position: relative;
+    z-index: 1;
+    background: linear-gradient(45deg, #ffd700, #ffcc00);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  .header p {
+    font-size: 1.3em;
+    opacity: 0.95;
+    position: relative;
+    z-index: 1;
+    font-weight: 400;
+    letter-spacing: 0.8px;
+  }
+  .topbar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 60px;
+    background: linear-gradient(90deg, #256eff 0%, #6fd0ff 100%);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    z-index: 9999;
+    transition: all 0.3s ease;
+  }
+  .topbar-items {
+    display: flex;
+    gap: 20px;
+  }
+  .topbar-item {
+    padding: 10px 20px;
+    display: flex;
+    align-items: center;
+    color: white;
+    text-decoration: none;
+    font-size: 16px;
+    font-weight: 500;
+    transition: all 0.3s ease;
+    position: relative;
+    border-radius: 25px;
+  }
+  .topbar-item i {
+    font-size: 20px;
+    margin-right: 8px;
+  }
+  .topbar-item:hover {
+    background: rgba(255, 255, 255, 0.2);
+    transform: translateY(-2px);
+  }
+  .topbar-item::before {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 50%;
+    width: 0;
+    height: 2px;
+    background: linear-gradient(45deg, #ffd700, #ffcc00);
+    transition: all 0.3s ease;
+    transform: translateX(-50%);
+  }
+  .topbar-item:hover::before {
+    width: 80%;
+  }
+  .controls {
+    padding: 20px 30px;
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(10px);
+    border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+  }
+  .stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 25px;
+    margin-bottom: 20px;
+  }
+  .stat-card {
+    background: linear-gradient(135deg, #fff 0%, #f8f9fa 100%);
+    padding: 30px;
+    border-radius: 20px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+    text-align: center;
+    transition: all 0.4s ease;
+    border: 1px solid rgba(255, 255, 255, 0.5);
+    position: relative;
+    overflow: hidden;
+  }
+  .stat-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: linear-gradient(90deg, #256eff, #6fd0ff);
+    transform: scaleX(0);
+    transition: transform 0.4s ease;
+  }
+  .stat-card:hover::before {
+    transform: scaleX(1);
+  }
+  .stat-card:hover {
+    transform: translateY(-10px) scale(1.02);
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+  }
+  .stat-icon {
+    font-size: 2.5em;
+    margin-bottom: 15px;
+    background: linear-gradient(45deg, #256eff, #6fd0ff);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  .stat-number {
+    font-size: 2.5em;
+    font-weight: 800;
+    background: linear-gradient(45deg, #256eff, #6fd0ff);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    margin-bottom: 10px;
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1);
+  }
+  .stat-label {
+    color: #6c757d;
+    font-size: 0.95em;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    font-weight: 600;
+  }
+  .control-group {
+    margin-bottom: 20px;
+  }
+  .control-group label {
+    display: block;
+    margin-bottom: 15px;
+    font-weight: 700;
+    color: #495057;
+    font-size: 1.1em;
+    letter-spacing: 0.5px;
+  }
+  #meterSearch {
+    width: 100%;
+    padding: 10px 15px;
+    border: 2px solid #e9ecef;
+    border-radius: 8px;
+    font-size: 14px;
+    margin-bottom: 15px;
+    transition: border-color 0.3s ease;
+  }
+  #meterSearch:focus {
+    outline: none;
+    border-color: #256eff;
+    box-shadow: 0 0 0 3px rgba(37, 111, 255, 0.1);
+  }
+  .meter-filters {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 10px;
+    margin-bottom: 30px;
+    max-height: 400px;
+    overflow-y: auto;
+    padding: 5px;
+  }
+  .meter-filters::-webkit-scrollbar {
+    width: 6px;
+  }
+  .meter-filters::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 3px;
+  }
+  .meter-filters::-webkit-scrollbar-thumb {
+    background: #c1c1c1;
+    border-radius: 3px;
+  }
+  .meter-filters::-webkit-scrollbar-thumb:hover {
+    background: #a8a8a8;
+  }
+  .filter-item {
+    display: flex;
+    align-items: center;
+    padding: 12px 15px;
+    background: linear-gradient(135deg, #fff 0%, #f8f9fa 100%);
+    border-radius: 12px;
+    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.05);
+    transition: all 0.3s ease;
+    min-height: 48px;
+    position: relative;
+    border: 2px solid transparent;
+    cursor: pointer;
+  }
+  .filter-item::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 4px;
+    border-radius: 12px 0 0 12px;
+    background-color: #e0e0e0;
+    transition: all 0.3s ease;
+  }
+  .filter-item.status-active::before {
+    background: linear-gradient(135deg, #4caf50, #8bc34a);
+    box-shadow: 0 0 10px rgba(76, 175, 80, 0.3);
+  }
+  .filter-item.status-standby::before {
+    background: linear-gradient(135deg, #ff9800, #ffc107);
+    box-shadow: 0 0 10px rgba(255, 152, 0, 0.3);
+  }
+  .filter-item.status-off::before {
+    background: linear-gradient(135deg, #f44336, #e57373);
+    box-shadow: 0 0 10px rgba(124, 67, 54, 0.3);
+  }
+  .filter-item:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.1);
+    border-color: rgba(37, 111, 255, 0.2);
+  }
+  .filter-item input[type="checkbox"] {
+    margin-right: 12px;
+    transform: scale(1.2);
+    cursor: pointer;
+    accent-color: #256eff;
+  }
+  .filter-item label {
+    margin: 0;
+    cursor: pointer;
+    flex: 1;
+    font-size: 14px;
+    font-weight: 500;
+    color: #495057;
+    transition: color 0.3s ease;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .filter-item:hover label {
+    color: #256eff;
+  }
+  .color-indicator {
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    margin-left: 10px;
+    border: 2px solid white;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+    flex-shrink: 0;
+    position: relative;
+    overflow: hidden;
+  }
+  .color-indicator::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 4px;
+    height: 4px;
+    background: rgba(255, 255, 255, 0.8);
+    border-radius: 50%;
+    transform: translate(-50%, -50%);
+    animation: glow 2s infinite;
+  }
+  @keyframes glow {
+    0%, 100% { opacity: 0.3; }
+    50% { opacity: 1; }
+  }
+  .action-buttons {
+    display: flex;
+    gap: 20px;
+    justify-content: center;
+    flex-wrap: wrap;
+    margin-top: 20px;
+  }
+  .btn {
+    padding: 15px 30px;
+    border: none;
+    border-radius: 30px;
+    font-size: 16px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    position: relative;
+    overflow: hidden;
+    min-width: 160px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+  }
+  .btn::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+    transition: left 0.5s ease;
+  }
+  .btn:hover::before {
+    left: 100%;
+  }
+  .btn-primary {
+    background: linear-gradient(135deg, #256eff, #6fd0ff);
+    color: white;
+    box-shadow: 0 5px 20px rgba(37, 111, 255, 0.3);
+  }
+  .btn-success {
+    background: linear-gradient(135deg, #4caf50, #8bc34a);
+    color: white;
+    box-shadow: 0 5px 20px rgba(76, 175, 80, 0.3);
+  }
+  .btn-info {
+    background: linear-gradient(135deg, #6633FF, #66CCFF);
+    color: white;
+    box-shadow: 0 5px 20px rgba(33, 150, 123, 0.3);
+  }
+  .btn-warning {
+    background: linear-gradient(135deg, #ff9800, #ffc107);
+    color: white;
+    box-shadow: 0 5px 20px rgba(255, 152, 0, 0.3);
+  }
+  .btn-secondary {
+    background: linear-gradient(135deg, #6c757d, #adb5bd);
+    color: white;
+    box-shadow: 0 5px 20px rgba(108, 117, 125, 0.3);
+  }
+  .btn-deselect-all {
+    background: linear-gradient(135deg, #e63946, #f25c68);
+    color: white;
+    box-shadow: 0 5px 20px rgba(230, 57, 70, 0.3);
+  }
+  .btn-expand-data {
+    background: linear-gradient(135deg, #ff6b9b, #ff99cc);
+    color: white;
+    box-shadow: 0 5px 20px rgba(255, 107, 155, 0.3);
+  }
+  .btn:hover, .btn-deselect-all:hover, .btn-expand-data:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+  }
+  .btn:active, .btn-deselect-all:active, .btn-expand-data:active {
+    transform: translateY(-1px);
+  }
+  .chart-container {
+    padding: 10px 20px;
+    background: linear-gradient(135deg, #fff 0%, #f8f9fa 100%);
+    position: relative;
+  }
+  .chart-header {
+    text-align: center;
+    margin-bottom: -15px;
+    padding: 10px 0;
+  }
+  .chart-title {
+    font-size: 1.8em;
+    font-weight: 700;
+    background: linear-gradient(45deg, #256eff, #6fd0ff);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    margin-bottom: 15px;
+  }
+  .chart-wrapper {
+    position: relative;
+    min-height: 500px;
+    background: linear-gradient(135deg, #fff 0%, #f8f9fa 100%);
+    border-radius: 20px;
+    padding: 15px;
+    box-shadow: inset 0 5px 20px rgba(0, 0, 0, 0.05);
+    border: 1px solid rgba(37, 111, 255, 0.1);
+    transition: height 0.3s ease;
+  }
+  #totalChartWrapper {
+    min-height: 500px;
+    margin-top: 5px;
+    transition: height 0.3s ease;
+  }
+  .loading {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    min-height: 300px;
+  }
+  .spinner {
+    width: 40px;
+    height: 40px;
+    border: 4px solid #f3f3f3;
+    border-top: 4px solid #256eff;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+  }
+  .loading-text {
+    margin-top: 20px;
+    color: #495057;
+    font-size: 16px;
+    text-align: center;
+  }
+  @keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+  }
+  .error-modal {
+    position: fixed;
+    top: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: #f44336;
+    color: white;
+    padding: 15px;
+    border-radius: 8px;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+    z-index: 10000;
+    display: flex;
+    gap: 10px;
+    align-items: center;
+  }
+  .error-modal button {
+    padding: 8px 16px;
+    border: none;
+    border-radius: 4px;
+    background: #fff;
+    color: #f44336;
+    cursor: pointer;
+    font-weight: 600;
+  }
+  @media (max-width: 1012px) {
+    .chart-wrapper, #totalChartWrapper {
+      min-height: 420px;
+      padding: 20px;
+    }
+  }
+  @media (max-width: 768px) {
+    .topbar {
+      height: 50px;
+    }
+    .topbar-items {
+      gap: 10px;
+    }
+    .topbar-item {
+      padding: 8px 15px;
+      font-size: 14px;
+    }
+    .topbar-item i {
+      font-size: 16px;
+      margin-right: 6px;
+    }
+    .container {
+      margin-top: 50px;
+    }
+    .chart-wrapper, #totalChartWrapper {
+      min-height: 400px;
+      padding: 15px;
+    }
+    .chart-title {
+      font-size: 1.4em;
+    }
+    .action-buttons {
+      flex-direction: column;
+      align-items: stretch;
+    }
+    .action-buttons .btn,
+    .action-buttons .btn-deselect-all,
+    .action-buttons .btn-expand-data {
+      flex: 1;
+      min-width: 100%;
+      max-width: 350px;
+      margin: 5px auto;
+      text-align: center;
+    }
+    .meter-filters {
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 8px;
+    }
+    .filter-item {
+      padding: 10px 12px;
+      min-height: 44px;
+    }
+    .filter-item label {
+      font-size: 13px;
+    }
+  }
+  @media (max-width: 480px) {
+    .chart-title {
+      font-size: 1.2em;
+    }
+    .chart-wrapper, #totalChartWrapper {
+      min-height: 350px;
+    }
+    .meter-filters {
+      grid-template-columns: 1fr;
+      max-height: 300px;
+    }
+  }
+  @media (max-width: 430px) {
+    .header h1 {
+      font-size: 2.5em;
+    }
+    .header p {
+      font-size: 1.1em;
+    }
+    .stat-card {
+      padding: 20px;
+    }
+    .stat-number {
+      font-size: 2em;
+    }
+    .btn {
+      padding: 12px 25px;
+      font-size: 14px;
+    }
+    .chart-title {
+      font-size: 1.1em;
+    }
+    .chart-wrapper, #totalChartWrapper {
+      min-height: 320px;
+    }
+    .filter-item label {
+      font-size: 12px;
+    }
+  }
+  @media (min-width: 1920px) {
+    body {
+      padding: 30px;
+    }
+    .container {
+      max-width: calc(100% - 60px);
+      margin: 70px auto 30px;
+    }
+    .topbar {
+      height: 70px;
+    }
+    .topbar-item i {
+      font-size: 24px;
+      margin-right: 12px;
+    }
+    .topbar-item {
+      font-size: 18px;
+      padding: 15px 25px;
+    }
+    .header h1 {
+      font-size: 3.5em;
+    }
+    .header p {
+      font-size: 1.5em;
+    }
+    .stat-card {
+      padding: 40px;
+    }
+    .stat-number {
+      font-size: 3em;
+    }
+    .stat-label {
+      font-size: 1.1em;
+    }
+    .chart-wrapper, #totalChartWrapper {
+      min-height: 550px;
+      padding: 30px;
+    }
+    .chart-title {
+      font-size: 2.2em;
+    }
+    .meter-filters {
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 12px;
+    }
+  }
+  @media (min-width: 2560px) {
+    body {
+      font-size: 18px;
+      padding: 40px;
+    }
+    .container {
+      max-width: 2200px;
+      margin: 80px auto 40px;
+    }
+    .topbar {
+      height: 80px;
+    }
+    .topbar-item {
+      font-size: 20px;
+      padding: 18px 30px;
+    }
+    .header h1 {
+      font-size: 4em;
+    }
+    .header p {
+      font-size: 1.8em;
+    }
+    .stats {
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 35px;
+    }
+    .stat-number {
+      font-size: 3.5em;
+    }
+    .chart-wrapper, #totalChartWrapper {
+      min-height: 600px;
+    }
+    .chart-title {
+      font-size: 2.5em;
+    }
+    .meter-filters {
+      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+      gap: 15px;
+    }
+  }
+</style>
+</head>
+<body>
+   <div class="topbar">
+    <div class="topbar-items">
+      <a href="index.html" class="topbar-item">
+        <i class="fas fa-home"></i>
+        <span>Home</span>
+      </a>
+      <a href="MainIncoming.html" class="topbar-item">
+        <i class="fas fa-network-wired"></i>
+        <span>Main Incoming</span>
+      </a>
+      <a href="BuildingPowerAnalytics.html" class="topbar-item">
+        <i class="fas fa-bolt"></i> 
+        <span>Building Power Analytics</span>
+      </a>
+    </div>
+  </div>
+  <div class="container">
+    <div class="header">
+      <h1><i class="fas fa-bolt"></i> Power Monitoring Dashboard</h1>
+      <p>Building Power Analytics (excl. Chiller & Bldg 3)</p>
+    </div>
+    <div class="controls">
+      <div class="stats" id="statsContainer">
+        <div class="stat-card">
+          <div class="stat-icon">
+            <i class="fas fa-building"></i>
+          </div>
+          <div class="stat-number" id="totalPowerBD1">0</div>
+          <div class="stat-label">Total Power BD1 (kW)</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon">
+            <i class="fas fa-building"></i>
+          </div>
+          <div class="stat-number" id="totalPowerBD2">0</div>
+          <div class="stat-label">Total Power BD2 (kW)</div>
+        </div>
+      </div>
+      <div class="control-group">
+        <label><i class="fas fa-filter"></i> Select Meters to Display:</label>
+        <input type="text" id="meterSearch" placeholder="Search meters (e.g., BD1, AHU)...">
+        <div class="meter-filters" id="meterFilters"></div>
+      </div>
+      <div class="action-buttons">
+        <button class="btn btn-primary" onclick="selectAll()">
+          <i class="fas fa-check-double"></i> Select All
+        </button>
+        <button class="btn btn-deselect-all" onclick="deselectAll()">
+          <i class="fas fa-times"></i> Deselect All
+        </button>
+        <button class="btn btn-warning" onclick="selectBD1()">
+          <i class="fas fa-building"></i> BD1 Only
+        </button>
+        <button class="btn btn-secondary" onclick="selectBD2()">
+          <i class="fas fa-building"></i> BD2 Only
+        </button>
+        <button class="btn btn-success" onclick="exportCSV()">
+          <i class="fas fa-file-csv"></i> Export CSV
+        </button>
+        <button class="btn btn-info" onclick="exportPNG()">
+          <i class="fas fa-image"></i> Export Image
+        </button>
+        <button class="btn btn-expand-data" onclick="toggleTotalChart()">
+          <i class="fas fa-expand"></i> Expand Data
+        </button>
+      </div>
+    </div>
+    <div class="chart-container">
+      <div class="chart-header">
+        <div class="chart-title"><i class="fas fa-chart-line"></i> Power Monitoring</div>
+      </div>
+      <div class="chart-wrapper">
+        <div class="loading" id="loading">
+          <div class="spinner"></div>
+          <div class="loading-text">Loading data...</div>
+        </div>
+        <canvas id="myChart" style="display: none;"></canvas>
+      </div>
+      <div class="chart-header" id="totalChartHeader" style="display: none;">
+        <div class="chart-title"><i class="fas fa-chart-line"></i> Total Power Metrics</div>
+      </div>
+      <div class="chart-wrapper" id="totalChartWrapper" style="display: none;">
+        <canvas id="totalChart"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let chartInstance = null;
+    let totalChartInstance = null;
+    let rawData = null;
+    let allDatasets = [];
+    let filteredData = null;
+    let refreshInterval = null;
+    let isTotalChartVisible = false;
+    const colors = [
+      '#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FECA57',
+      '#FF9FF3', '#54A0FF', '#5F27CD', '#00D2D3', '#FF9F43',
+      '#EE5A12', '#0984e3', '#6C5CE7', '#A29BFE', '#FD79A8'
+    ];
+    const bd1Meters = ['BD1_DB1_BD6','BD1_DB2_UTILITIES','BD1_DB4_COATING','BD1_SDB2_1_PACKING','BD1_SDB_2-3','BD1_SDB_4-1','BD1_DB11_AHU_DURALUX','BD1_DB3_COATING','BD1_DB9_IPP','BD1_BD2_BD3_HP_Cleaning','BD1_BD4_BD5_QC','BD1_BD4_MOULD_PROD','BD1_BD5_MOULD_PROD','BD1_BD6_MOULD_PROD','BD1_DB14_PLASTIC','BD1_DB15_PLASTIC','BD1_DB5_RX_MPF','BD1_DB6_PLASTIC','BD1_DB7_PLASTIC','BD1_RX_Surfacing_MPF','BD1_SCHNEIDER_1_4','BD1_SCHNEIDER_5_8','BD1_DB8_AHU'];
+    const bd2Meters = ['BD2_DB3_UTILITIES','BD2_DB4_UTILITIES','BD2_DB2_Ring','BD2_DB14_LENS','BD2_DB9_MONOMER','BD2_DB6_Tinting','BD2_SDB3_Mix_F2B2','BD2_DB10_PLASTIC','BD2_DB12_RX','BD2_DB13_RX_EMERGENCY','BD2_DB16_PLP','BD2_DB7_2_NDR_2','BD2_DB7_PLASTIC','BD2_DB8_PLASTIC','BD2_DB15_AHU','BD2_DB1_Ring','BD2_DB5_AHU'];
+
+    const fallbackData = `
+Timestamp,BD1_DB1_BD6,BD1_DB2_UTILITIES,BD1_DB4_COATING
+01/01/2025 00:00,10.5,12.3,11.8
+01/01/2025 01:00,10.7,12.5,11.9
+01/01/2025 02:00,10.8,12.6,12.0
+`;
+
+    function parseCustomDate(dateStr) {
+      try {
+        const [datePart, timePart] = dateStr.split(' ');
+        if (!datePart || !timePart) throw new Error('Invalid date format: missing date or time');
+        const [day, month, year] = datePart.split('/').map(Number);
+        const [hour, minute] = timePart.split(':').map(Number);
+        if (isNaN(day) || isNaN(month) || isNaN(year) || isNaN(hour) || isNaN(minute)) {
+          throw new Error('Invalid date components');
+        }
+        const date = new Date(year, month - 1, day, hour, minute);
+        if (isNaN(date.getTime())) throw new Error('Invalid date format');
+        return date.toISOString();
+      } catch (error) {
+        console.error('Error parsing date:', dateStr, error);
+        return null;
+      }
+    }
+
+    function filterLast24Hours(data) {
+      if (!data || data.length === 0) {
+        console.warn('No data to filter');
+        return data;
+      }
+      try {
+        const latestTimestamp = new Date(parseCustomDate(data[data.length - 1][0]));
+        if (isNaN(latestTimestamp.getTime())) {
+          console.warn('Invalid latest timestamp, using all data');
+          return data;
+        }
+        const cutoffTime = new Date(latestTimestamp.getTime() - (24 * 60 * 60 * 1000));
+        const filtered = data.filter(row => {
+          const timestamp = new Date(parseCustomDate(row[0]));
+          return timestamp >= cutoffTime && !isNaN(timestamp.getTime());
+        });
+        return filtered.length > 0 ? filtered : data;
+      } catch (error) {
+        console.warn('Error filtering 24-hour data, using all data:', error);
+        return data;
+      }
+    }
+
+    function cacheData(data) {
+      try {
+        localStorage.setItem('cachedData', JSON.stringify(data));
+        localStorage.setItem('cacheTimestamp', Date.now());
+        console.log('Data cached successfully');
+      } catch (error) {
+        console.warn('Error caching data:', error);
+      }
+    }
+
+    function getCachedData() {
+      try {
+        const cached = localStorage.getItem('cachedData');
+        const timestamp = localStorage.getItem('cacheTimestamp');
+        if (cached && timestamp && Date.now() - parseInt(timestamp) < 15 * 60 * 1000) {
+          console.log('Using cached data');
+          return JSON.parse(cached);
+        }
+      } catch (error) {
+        console.warn('Error retrieving cached data:', error);
+      }
+      return null;
+    }
+
+    function showErrorModal(message) {
+      const existingModal = document.querySelector('.error-modal');
+      if (existingModal) existingModal.remove();
+      const modal = document.createElement('div');
+      modal.className = 'error-modal';
+      modal.innerHTML = `
+        ${message}
+        <button onclick="this.parentElement.remove()">Close</button>
+      `;
+      document.body.appendChild(modal);
+      setTimeout(() => modal.remove(), 10000); // Auto-close after 10 seconds
+    }
+
+    async function fetchWithRetry(url, retries = 3, delay = 2000) {
+  let controller;
+  
+  for (let i = 0; i < retries; i++) {
+    controller = new AbortController();
+    
+    try {
+      const timeoutId = setTimeout(() => controller.abort(), 8000);
+
+      const response = await fetch(url, {
+        cache: 'no-store',
+        signal: controller.signal
+      });
+
+      clearTimeout(timeoutId);
+      
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      
+      return await response.text();
+    } catch (error) {
+      if (error.name === 'AbortError' && i < retries - 1) {
+        console.warn(`Attempt ${i+1} timed out, retrying...`);
+        await new Promise(r => setTimeout(r, delay));
+        continue;
+      }
+      if (i === retries - 1) throw error;
+    }
+  }
+}
+
+    async function loadData() {
+      const loadingElement = document.getElementById('loading');
+      const chartElement = document.getElementById('myChart');
+      loadingElement.innerHTML = '<div class="spinner"></div><div class="loading-text">Loading data...</div>';
+
+      // Check cached data first
+      const cachedData = getCachedData();
+      if (cachedData) {
+        rawData = cachedData;
+        const last24HoursData = filterLast24Hours(cachedData.data);
+        filteredData = {
+          timestamps: last24HoursData.map(row => row[0]),
+          headers: cachedData.headers,
+          data: last24HoursData
+        };
+        processData();
+        return;
+      }
+
+      const originalUrl = 'https://www.dropbox.com/scl/fi/vkm1in0n61h8hsdqgpp5z/Power_Meter_Day_kW.csv?rlkey=gbcgnv5qggkn6ixejhgc50ixj&&raw=1';
+      const proxyUrls = [
+        'https://corsproxy.io/?',
+        'https://api.allorigins.win/raw?url='
+      ];
+
+      let csv = null;
+      let successfulProxy = null;
+
+      for (const proxy of proxyUrls) {
+        const fullUrl = proxy + encodeURIComponent(originalUrl);
+        try {
+          console.log(`Trying to fetch data from: ${fullUrl}`);
+          csv = await fetchWithRetry(fullUrl);
+          successfulProxy = proxy;
+          console.log(`Successfully fetched data using: ${successfulProxy}`);
+          break;
+        } catch (error) {
+          console.warn(`Failed to fetch from ${proxy}:`, error.message);
+        }
+      }
+
+      if (!csv) {
+        console.warn('All proxies failed. Using fallback data.');
+        loadingElement.innerHTML = `
+          <div class="spinner"></div>
+          <div class="loading-text">Using fallback data. <br>Click <a href="#" onclick="event.preventDefault(); loadData();">here</a> to retry.</div>`;
+        csv = fallbackData;
+      }
+
+      try {
+        if (!csv || csv.trim() === '') {
+          throw new Error('Received empty CSV data');
+        }
+
+        const lines = csv.trim().split(/\r?\n/); // รองรับทั้ง \n และ \r\n
+        if (lines.length < 2) {
+          throw new Error('CSV data is too short or invalid');
+        }
+
+        const headers = lines[0].split(',').map(h => h.trim());
+        if (headers.length < 2) {
+          throw new Error('CSV headers are invalid or missing');
+        }
+
+        const data = lines.slice(1).map(line => {
+          const values = line.split(',');
+          if (values.length !== headers.length) {
+            console.warn(`Row length mismatch: expected ${headers.length}, got ${values.length}, skipping row: ${line}`);
+            return null;
+          }
+          return values;
+        }).filter(row => row !== null);
+
+        if (data.length === 0) {
+          throw new Error('No valid data rows found');
+        }
+
+        rawData = { timestamps: data.map(row => row[0]), headers, data };
+        cacheData(rawData);
+
+        const last24HoursData = filterLast24Hours(data);
+        filteredData = {
+          timestamps: last24HoursData.map(row => row[0]),
+          headers,
+          data: last24HoursData
+        };
+
+        processData();
+      } catch (error) {
+        console.error('Error loading data:', error);
+        loadingElement.innerHTML = `
+          <div class="spinner"></div>
+          <div class="loading-text">Error: ${error.message}. <br>Click <a href="#" onclick="event.preventDefault(); loadData();">here</a> to retry.</div>`;
+        showErrorModal(`Failed to load data: ${error.message}`);
+      }
+    }
+
+    function processData() {
+      const loadingElement = document.getElementById('loading');
+      const chartElement = document.getElementById('myChart');
+
+      allDatasets = [];
+      for (let i = 1; i < filteredData.headers.length; i++) {
+        const label = filteredData.headers[i];
+        const color = colors[(i - 1) % colors.length];
+        const values = filteredData.data.map(row => {
+          const value = parseFloat(row[i]);
+          return isNaN(value) ? 0 : value;
+        });
+        allDatasets.push({
+          label,
+          data: values,
+          borderColor: color,
+          backgroundColor: color + '20',
+          borderWidth: 3,
+          fill: false,
+          tension: 0.4,
+          pointRadius: 0,
+          pointHoverRadius: 6,
+          pointHoverBackgroundColor: color,
+          pointHoverBorderColor: '#fff',
+          pointHoverBorderWidth: 3
+        });
+      }
+
+      createFilters();
+      updateStats();
+      createChart();
+      if (isTotalChartVisible) {
+        createTotalChart();
+      }
+      loadingElement.style.display = 'none';
+      chartElement.style.display = 'block';
+    }
+
+    function createFilters() {
+      const filtersContainer = document.getElementById('meterFilters');
+      filtersContainer.innerHTML = '';
+      if (!filteredData || !filteredData.data || filteredData.data.length === 0) {
+        console.warn('No filtered data for filters');
+        filtersContainer.innerHTML = '<div class="loading-text">No data available for filters.</div>';
+        return;
+      }
+      const latestData = filteredData.data[filteredData.data.length - 1];
+
+      allDatasets.forEach((dataset, index) => {
+        const value = parseFloat(latestData[index + 1]) || 0;
+        let statusClass = 'status-off';
+        if (value > 1) statusClass = 'status-active';
+        else if (value > 0.05) statusClass = 'status-standby';
+
+        const filterItem = document.createElement('div');
+        filterItem.className = `filter-item ${statusClass}`;
+
+        const checkbox = document.createElement('input');
+        checkbox.type = 'checkbox';
+        checkbox.id = `meter_${index}`;
+        checkbox.checked = true;
+        checkbox.addEventListener('change', updateChart);
+
+        const label = document.createElement('label');
+        label.htmlFor = `meter_${index}`;
+        label.textContent = dataset.label;
+
+        const colorIndicator = document.createElement('div');
+        colorIndicator.className = 'color-indicator';
+        colorIndicator.style.backgroundColor = dataset.borderColor;
+
+        filterItem.appendChild(checkbox);
+        filterItem.appendChild(label);
+        filterItem.appendChild(colorIndicator);
+        filtersContainer.appendChild(filterItem);
+      });
+    }
+
+    function updateChart() {
+      if (!chartInstance) {
+        console.warn('Chart instance not found');
+        return;
+      }
+      const activeDatasets = [];
+      const checkboxes = document.querySelectorAll('input[type="checkbox"]');
+      const latestData = filteredData?.data[filteredData.data.length - 1];
+
+      checkboxes.forEach((checkbox, index) => {
+        const value = parseFloat(latestData?.[index + 1]) || 0;
+        let statusClass = 'status-off';
+        if (value > 1) statusClass = 'status-active';
+        else if (value > 0.05) statusClass = 'status-standby';
+
+        const filterItem = checkbox.parentElement;
+        filterItem.className = `filter-item ${statusClass}`;
+
+        if (checkbox.checked) {
+          activeDatasets.push(allDatasets[index]);
+        }
+      });
+
+      chartInstance.data.datasets = activeDatasets;
+      chartInstance.update('none');
+      updateStats();
+      if (isTotalChartVisible && totalChartInstance) {
+        createTotalChart();
+      }
+    }
+
+    function updateStats() {
+      if (!filteredData || filteredData.data.length === 0) {
+        console.warn('No filtered data for stats');
+        return;
+      }
+      const latestData = filteredData.data[filteredData.data.length - 1];
+      const totalPower = latestData.slice(1).reduce((sum, val) => sum + (parseFloat(val) || 0), 0);
+
+      let bd1Total = 0;
+      let bd2Total = 0;
+
+      for (let i = 1; i < filteredData.headers.length; i++) {
+        const headerName = filteredData.headers[i].trim();
+        const value = parseFloat(latestData[i]) || 0;
+        if (bd1Meters.includes(headerName)) {
+          bd1Total += value;
+        } else if (bd2Meters.includes(headerName)) {
+          bd2Total += value;
+        }
+      }
+
+      animateNumber('totalPowerBD1', bd1Total);
+      animateNumber('totalPowerBD2', bd2Total);
+      animateNumber('totalPower', totalPower);
+    }
+
+    function animateNumber(elementId, targetValue) {
+      const element = document.getElementById(elementId);
+      if (!element) {
+        console.warn(`Element with ID ${elementId} not found`);
+        return;
+      }
+
+      const startValue = parseFloat(element.textContent) || 0;
+      const duration = 500;
+      const startTime = performance.now();
+
+      function step(currentTime) {
+        const elapsed = currentTime - startTime;
+        const progress = Math.min(elapsed / duration, 1);
+        const value = startValue + (targetValue - startValue) * progress;
+        element.textContent = value.toFixed(1);
+        if (progress < 1) {
+          requestAnimationFrame(step);
+        }
+      }
+
+      requestAnimationFrame(step);
+    }
+
+    function destroyChart(instance, name) {
+      if (instance) {
+        try {
+          instance.destroy();
+          console.log(`${name} chart destroyed successfully`);
+        } catch (err) {
+          console.warn(`Error destroying ${name} chart:`, err);
+        }
+      } else {
+        console.warn(`${name} chart instance not found`);
+      }
+    }
+
+    function createChart() {
+      const ctx = document.getElementById('myChart')?.getContext('2d');
+      if (!ctx) {
+        console.error('Canvas context not found');
+        return;
+      }
+      destroyChart(chartInstance, 'Main');
+      chartInstance = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: filteredData?.timestamps || [],
+          datasets: allDatasets
+        },
+        options: {
+          devicePixelRatio: 3,
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: {
+              position: 'top',
+              labels: {
+                boxWidth: 12,
+                padding: 20,
+                usePointStyle: true,
+                font: { size: 13, weight: '600' },
+                color: '#495057'
+              }
+            },
+            tooltip: {
+              mode: 'index',
+              intersect: false,
+              backgroundColor: 'rgba(0, 0, 0, 0.9)',
+              titleColor: '#fff',
+              bodyColor: '#fff',
+              borderColor: '#667eea',
+              borderWidth: 2,
+              cornerRadius: 12,
+              displayColors: true,
+              padding: 15,
+              titleFont: { size: 14, weight: 'bold' },
+              bodyFont: { size: 13 },
+              callbacks: {
+                title: function (tooltipItems) {
+                  const timestamp = tooltipItems[0].label;
+                  try {
+                    const [datePart, timePart] = timestamp.split(' ');
+                    return `${datePart} ${timePart}`;
+                  } catch (error) {
+                    return timestamp;
+                  }
+                }
+              }
+            }
+          },
+          scales: {
+            x: {
+              display: true,
+              title: {
+                display: true,
+                text: 'Time (Last 24 Hours)',
+                font: { size: 15, weight: 'bold' },
+                color: '#495057'
+              },
+              ticks: {
+                maxTicksLimit: 24,
+                autoSkip: true,
+                font: { size: 12 },
+                color: '#6c757d',
+                callback: function (value, index, values) {
+                  const timestamp = this.getLabelForValue(value);
+                  try {
+                    const timePart = timestamp.split(' ')[1];
+                    return timePart;
+                  } catch (error) {
+                    return timestamp;
+                  }
+                }
+              },
+              grid: {
+                color: 'rgba(0, 0, 0, 0.05)',
+                drawBorder: false
+              }
+            },
+            y: {
+              display: true,
+              title: {
+                display: true,
+                text: 'Power (kW)',
+                font: { size: 15, weight: 'bold' },
+                color: '#495057'
+              },
+              ticks: {
+                font: { size: 12 },
+                color: '#6c757d'
+              },
+              grid: {
+                color: 'rgba(0, 0, 0, 0.05)',
+                drawBorder: false
+              }
+            }
+          },
+          interaction: {
+            mode: 'nearest',
+            axis: 'x',
+            intersect: false
+          },
+          animation: {
+            duration: 1500,
+            easing: 'easeInOutQuart'
+          },
+          elements: {
+            line: {
+              borderJoinStyle: 'round'
+            }
+          }
+        }
+      });
+    }
+
+    function calculateTotalData() {
+      if (!filteredData || !filteredData.data) {
+        console.warn('No filtered data for total chart');
+        return {
+          bd1Total: [],
+          bd2Total: []
+        };
+      }
+
+      const bd1Total = [];
+      const bd2Total = [];
+
+      filteredData.data.forEach(row => {
+        let bd1Sum = 0;
+        let bd2Sum = 0;
+        for (let i = 1; i < filteredData.headers.length; i++) {
+          const headerName = filteredData.headers[i].trim();
+          const value = parseFloat(row[i]) || 0;
+          if (bd1Meters.includes(headerName)) {
+            bd1Sum += value;
+          } else if (bd2Meters.includes(headerName)) {
+            bd2Sum += value;
+          }
+        }
+        bd1Total.push(bd1Sum.toFixed(1));
+        bd2Total.push(bd2Sum.toFixed(1));
+      });
+
+      return { bd1Total, bd2Total };
+    }
+
+    function createTotalChart() {
+      const ctx = document.getElementById('totalChart')?.getContext('2d');
+      if (!ctx) {
+        console.error('Total chart canvas context not found');
+        return;
+      }
+      destroyChart(totalChartInstance, 'Total');
+      const { bd1Total, bd2Total } = calculateTotalData();
+
+      totalChartInstance = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: filteredData?.timestamps || [],
+          datasets: [
+            {
+              label: 'Total Power BD1',
+              data: bd1Total,
+              borderColor: '#FF6B6B',
+              backgroundColor: '#FF6B6B20',
+              borderWidth: 3,
+              fill: false,
+              tension: 0.4,
+              pointRadius: 0,
+              pointHoverRadius: 6,
+              pointHoverBackgroundColor: '#FF6B6B',
+              pointHoverBorderColor: '#fff',
+              pointHoverBorderWidth: 3
+            },
+            {
+              label: 'Total Power BD2',
+              data: bd2Total,
+              borderColor: '#4ECDC4',
+              backgroundColor: '#4ECDC420',
+              borderWidth: 3,
+              fill: false,
+              tension: 0.4,
+              pointRadius: 0,
+              pointHoverRadius: 6,
+              pointHoverBackgroundColor: '#4ECDC4',
+              pointHoverBorderColor: '#fff',
+              pointHoverBorderWidth: 3
+            }
+          ]
+        },
+        options: {
+          devicePixelRatio: 3,
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: {
+              position: 'top',
+              labels: {
+                boxWidth: 12,
+                padding: 20,
+                usePointStyle: true,
+                font: { size: 13, weight: '600' },
+                color: '#495057'
+              }
+            },
+            tooltip: {
+              mode: 'index',
+              intersect: false,
+              backgroundColor: 'rgba(0, 0, 0, 0.9)',
+              titleColor: '#fff',
+              bodyColor: '#fff',
+              borderColor: '#667eea',
+              borderWidth: 2,
+              cornerRadius: 12,
+              displayColors: true,
+              padding: 15,
+              titleFont: { size: 14, weight: 'bold' },
+              bodyFont: { size: 13 },
+              callbacks: {
+                title: function (tooltipItems) {
+                  const timestamp = tooltipItems[0].label;
+                  try {
+                    const [datePart, timePart] = timestamp.split(' ');
+                    return `${datePart} ${timePart}`;
+                  } catch (error) {
+                    return timestamp;
+                  }
+                }
+              }
+            }
+          },
+          scales: {
+            x: {
+              display: true,
+              title: {
+                display: true,
+                text: 'Time (Last 24 Hours)',
+                font: { size: 15, weight: 'bold' },
+                color: '#495057'
+              },
+              ticks: {
+                maxTicksLimit: 24,
+                autoSkip: true,
+                font: { size: 12 },
+                color: '#6c757d',
+                callback: function (value, index, values) {
+                  const timestamp = this.getLabelForValue(value);
+                  try {
+                    const timePart = timestamp.split(' ')[1];
+                    return timePart;
+                  } catch (error) {
+                    return timestamp;
+                  }
+                }
+              },
+              grid: {
+                color: 'rgba(0, 0, 0, 0.05)',
+                drawBorder: false
+              }
+            },
+            y: {
+              display: true,
+              title: {
+                display: true,
+                text: 'Power (kW)',
+                font: { size: 15, weight: 'bold' },
+                color: '#495057'
+              },
+              ticks: {
+                font: { size: 12 },
+                color: '#6c757d'
+              },
+              grid: {
+                color: 'rgba(0, 0, 0, 0.05)',
+                drawBorder: false
+              }
+            }
+          },
+          interaction: {
+            mode: 'nearest',
+            axis: 'x',
+            intersect: false
+          },
+          animation: {
+            duration: 1500,
+            easing: 'easeInOutQuart'
+          },
+          elements: {
+            line: {
+              borderJoinStyle: 'round'
+            }
+          }
+        }
+      });
+    }
+
+    function toggleTotalChart() {
+      const totalChartWrapper = document.getElementById('totalChartWrapper');
+      const totalChartHeader = document.getElementById('totalChartHeader');
+      const expandButton = document.querySelector('button[onclick="toggleTotalChart()"]');
+      isTotalChartVisible = !isTotalChartVisible;
+
+      if (isTotalChartVisible) {
+        totalChartWrapper.style.display = 'block';
+        totalChartHeader.style.display = 'block';
+        expandButton.innerHTML = '<i class="fas fa-compress"></i> Collapse Data';
+        if (!totalChartInstance) {
+          createTotalChart();
+        }
+      } else {
+        totalChartWrapper.style.display = 'none';
+        totalChartHeader.style.display = 'none';
+        expandButton.innerHTML = '<i class="fas fa-expand"></i> Expand Data';
+      }
+    }
+
+    function selectAll() {
+      document.querySelectorAll('input[type="checkbox"]').forEach(cb => cb.checked = true);
+      updateChart();
+    }
+
+    function deselectAll() {
+      document.querySelectorAll('input[type="checkbox"]').forEach(cb => cb.checked = false);
+      updateChart();
+    }
+
+    function selectBD1() {
+      document.querySelectorAll('input[type="checkbox"]').forEach((cb, index) => {
+        const label = allDatasets[index]?.label || '';
+        cb.checked = bd1Meters.includes(label);
+      });
+      updateChart();
+    }
+
+    function selectBD2() {
+      document.querySelectorAll('input[type="checkbox"]').forEach((cb, index) => {
+        const label = allDatasets[index]?.label || '';
+        cb.checked = bd2Meters.includes(label);
+      });
+      updateChart();
+    }
+
+    function exportCSV() {
+      if (!rawData) {
+        showErrorModal('No data available to export.');
+        return;
+      }
+      const activeColumns = [0];
+      document.querySelectorAll('input[type="checkbox"]').forEach((cb, index) => {
+        if (cb.checked) activeColumns.push(index + 1);
+      });
+
+      let csvContent = rawData.headers.filter((_, i) => activeColumns.includes(i)).join(',') + '\n';
+      rawData.data.forEach(row => {
+        csvContent += row.filter((_, i) => activeColumns.includes(i)).join(',') + '\n';
+      });
+
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(blob);
+      link.download = `power_data_${new Date().toISOString().split('T')[0]}.csv`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
+
+    function exportPNG() {
+  const canvases = [];
+  if (chartInstance) {
+    canvases.push({ canvas: chartInstance.canvas, name: 'power_chart' });
+  }
+  if (isTotalChartVisible && totalChartInstance) {
+    canvases.push({ canvas: totalChartInstance.canvas, name: 'total_power_chart' });
+  }
+
+  if (canvases.length === 0) {
+    showErrorModal('No chart available to export.');
+    return;
+  }
+
+  // อัตราส่วนการขยาย (เช่น 2x resolution)
+  const scale = 2;
+
+  canvases.forEach(item => {
+    // สร้าง canvas ใหม่ขนาดใหญ่ขึ้น
+    const tempCanvas = document.createElement('canvas');
+    const originalWidth = item.canvas.width;
+    const originalHeight = item.canvas.height;
+
+    tempCanvas.width = originalWidth * scale;
+    tempCanvas.height = originalHeight * scale;
+
+    const tempCtx = tempCanvas.getContext('2d');
+
+    // ตั้งค่าคุณภาพสูง
+    tempCtx.setTransform(scale, 0, 0, scale, 0, 0);
+    tempCtx.fillStyle = 'white';
+    tempCtx.fillRect(0, 0, originalWidth, originalHeight);
+
+    // วาดภาพจาก canvas เดิม
+    tempCtx.drawImage(item.canvas, 0, 0);
+
+    // รีเซ็ต transform
+    tempCtx.setTransform(1, 0, 0, 1, 0, 0);
+
+    // สร้างลิงก์และดาวน์โหลด
+    const link = document.createElement('a');
+    link.download = `${item.name}_${new Date().toISOString().split('T')[0]}.png`;
+    link.href = tempCanvas.toDataURL('image/png', 1.0); // คุณภาพ 100%
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  });
+}
+
+    function startAutoRefresh() {
+      if (refreshInterval) clearInterval(refreshInterval);
+      refreshInterval = setInterval(loadData, 15 * 60 * 1000);
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      document.body.style.opacity = '0';
+      setTimeout(() => {
+        document.body.style.transition = 'opacity 0.5s ease';
+        document.body.style.opacity = '1';
+      }, 100);
+      loadData().then(() => {
+        startAutoRefresh();
+      }).catch(error => {
+        console.error('Initial data load failed:', error);
+        document.getElementById('loading').innerHTML = `
+          <div class="spinner"></div>
+          <div class="loading-text">Error: ${error.message}. <br>Click <a href="#" onclick="event.preventDefault(); loadData();">here</a> to retry.</div>`;
+        showErrorModal(`Initial data load failed: ${error.message}`);
+      });
+
+      // Search functionality for meters
+      document.getElementById('meterSearch').addEventListener('input', function(e) {
+        const term = e.target.value.toLowerCase();
+        document.querySelectorAll('.filter-item').forEach(item => {
+          const labelText = item.querySelector('label').textContent.toLowerCase();
+          item.style.display = labelText.includes(term) ? 'flex' : 'none';
+        });
+      });
+    });
+
+    document.addEventListener("contextmenu", e => e.preventDefault());
+    document.addEventListener("keydown", e => {
+      if ((e.ctrlKey && ['c', 'x', 'u', 's', 'p'].includes(e.key.toLowerCase())) || e.key === "F12") {
+        e.preventDefault();
+      }
+    });
+  </script>
+</body>
+</html>
