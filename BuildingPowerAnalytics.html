@@ -450,7 +450,7 @@
   }
   .chart-wrapper {
     position: relative;
-    min-height: 500px;
+    min-height: 650px;
     background: linear-gradient(135deg, #fff 0%, #f8f9fa 100%);
     border-radius: 20px;
     padding: 15px;
@@ -459,7 +459,7 @@
     transition: height 0.3s ease;
   }
   #totalChartWrapper {
-    min-height: 500px;
+    min-height: 550px;
     margin-top: 5px;
     transition: height 0.3s ease;
   }
@@ -725,14 +725,14 @@
             <i class="fas fa-building"></i>
           </div>
           <div class="stat-number" id="totalPowerBD1">0</div>
-          <div class="stat-label">Total Power BD1 (kW)</div>
+          <div class="stat-label">Total Power Building 1 (kW)</div>
         </div>
         <div class="stat-card">
           <div class="stat-icon">
             <i class="fas fa-building"></i>
           </div>
           <div class="stat-number" id="totalPowerBD2">0</div>
-          <div class="stat-label">Total Power BD2 (kW)</div>
+          <div class="stat-label">Total Power Building 2 (kW)</div>
         </div>
       </div>
       <div class="control-group">
@@ -748,10 +748,10 @@
           <i class="fas fa-times"></i> Deselect All
         </button>
         <button class="btn btn-warning" onclick="selectBD1()">
-          <i class="fas fa-building"></i> BD1 Only
+          <i class="fas fa-building"></i> Building 1 Only
         </button>
         <button class="btn btn-secondary" onclick="selectBD2()">
-          <i class="fas fa-building"></i> BD2 Only
+          <i class="fas fa-building"></i> Building 2 Only
         </button>
         <button class="btn btn-success" onclick="exportCSV()">
           <i class="fas fa-file-csv"></i> Export CSV
