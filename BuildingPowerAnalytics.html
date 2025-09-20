@@ -1186,6 +1186,9 @@ Timestamp,BD1_DB1_BD6,BD1_DB2_UTILITIES,BD1_DB4_COATING
               padding: 15,
               titleFont: { size: 14, weight: 'bold' },
               bodyFont: { size: 13 },
+              itemSort: function(a, b) {
+                return b.raw - a.raw;
+              },
               callbacks: {
                 title: function (tooltipItems) {
                   const timestamp = tooltipItems[0].label;
@@ -1367,6 +1370,9 @@ Timestamp,BD1_DB1_BD6,BD1_DB2_UTILITIES,BD1_DB4_COATING
               padding: 15,
               titleFont: { size: 14, weight: 'bold' },
               bodyFont: { size: 13 },
+              itemSort: function(a, b) {
+                return b.raw - a.raw;
+              },
               callbacks: {
                 title: function (tooltipItems) {
                   const timestamp = tooltipItems[0].label;
