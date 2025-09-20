@@ -848,30 +848,6 @@ Timestamp,BD1_DB1_BD6,BD1_DB2_UTILITIES,BD1_DB4_COATING
       }
     }
 
-    function cacheData(data) {
-      try {
-        localStorage.setItem('cachedData', JSON.stringify(data));
-        localStorage.setItem('cacheTimestamp', Date.now());
-        console.log('Data cached successfully');
-      } catch (error) {
-        console.warn('Error caching data:', error);
-      }
-    }
-
-    function getCachedData() {
-      try {
-        const cached = localStorage.getItem('cachedData');
-        const timestamp = localStorage.getItem('cacheTimestamp');
-        if (cached && timestamp && Date.now() - parseInt(timestamp) < 15 * 60 * 1000) {
-          console.log('Using cached data');
-          return JSON.parse(cached);
-        }
-      } catch (error) {
-        console.warn('Error retrieving cached data:', error);
-      }
-      return null;
-    }
-
     function showErrorModal(message) {
       const existingModal = document.querySelector('.error-modal');
       if (existingModal) existingModal.remove();
@@ -919,20 +895,6 @@ Timestamp,BD1_DB1_BD6,BD1_DB2_UTILITIES,BD1_DB4_COATING
       const loadingElement = document.getElementById('loading');
       const chartElement = document.getElementById('myChart');
       loadingElement.innerHTML = '<div class="spinner"></div><div class="loading-text">Loading data...</div>';
-
-      // Check cached data first
-      const cachedData = getCachedData();
-      if (cachedData) {
-        rawData = cachedData;
-        const last24HoursData = filterLast24Hours(cachedData.data);
-        filteredData = {
-          timestamps: last24HoursData.map(row => row[0]),
-          headers: cachedData.headers,
-          data: last24HoursData
-        };
-        processData();
-        return;
-      }
 
       const originalUrl = 'https://www.dropbox.com/scl/fi/vkm1in0n61h8hsdqgpp5z/Power_Meter_Day_kW.csv?rlkey=gbcgnv5qggkn6ixejhgc50ixj&&raw=1';
       const proxyUrls = [
@@ -993,7 +955,6 @@ Timestamp,BD1_DB1_BD6,BD1_DB2_UTILITIES,BD1_DB4_COATING
         }
 
         rawData = { timestamps: data.map(row => row[0]), headers, data };
-        cacheData(rawData);
 
         const last24HoursData = filterLast24Hours(data);
         filteredData = {
