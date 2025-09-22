@@ -753,6 +753,9 @@
         <button class="btn btn-secondary" onclick="selectBD2()">
           <i class="fas fa-building"></i> Building 2 Only
         </button>
+        <button class="btn btn-info" onclick="showTop10()">
+          <i class="fas fa-star"></i> Show Top 10
+        </button>
         <button class="btn btn-success" onclick="exportCSV()">
           <i class="fas fa-file-csv"></i> Export CSV
         </button>
@@ -1493,6 +1496,34 @@ Timestamp,BD1_DB1_BD6,BD1_DB2_UTILITIES,BD1_DB4_COATING
       document.querySelectorAll('input[type="checkbox"]').forEach((cb, index) => {
         const label = allDatasets[index]?.label || '';
         cb.checked = bd2Meters.includes(label);
+      });
+      updateChart();
+    }
+
+    function showTop10() {
+      if (!allDatasets || allDatasets.length === 0) {
+        showErrorModal('No data available.');
+        return;
+      }
+      const activeIndices = [];
+      document.querySelectorAll('input[type="checkbox"]').forEach((cb, index) => {
+        if (cb.checked) activeIndices.push(index);
+      });
+      if (activeIndices.length === 0) {
+        showErrorModal('No meters selected.');
+        return;
+      }
+      const meterAverages = activeIndices.map(index => {
+        const values = allDatasets[index].data;
+        const sum = values.reduce((acc, val) => acc + val, 0);
+        const avg = values.length > 0 ? sum / values.length : 0;
+        return { index, avg };
+      });
+      meterAverages.sort((a, b) => b.avg - a.avg);
+      const top10Indices = meterAverages.slice(0, 10).map(item => item.index);
+      deselectAll();
+      top10Indices.forEach(index => {
+        document.getElementById(`meter_${index}`).checked = true;
       });
       updateChart();
     }
