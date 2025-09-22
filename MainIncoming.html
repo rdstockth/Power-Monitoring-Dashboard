@@ -986,6 +986,23 @@ Timestamp,BD1_TR1_MAIN,BD1_TR2_MAIN,BD1_TR3_MAIN,BD2_TR1_MAIN,BD2_TR2_MAIN,BD2_T
       }
     }
 
+    function smoothData(data, windowSize = 5) {
+      const smoothed = [];
+      for (let i = 0; i < data.length; i++) {
+        let sum = 0;
+        let count = 0;
+        for (let j = -windowSize + 1; j < windowSize; j++) {
+          const index = i + j;
+          if (index >= 0 && index < data.length) {
+            sum += data[index];
+            count++;
+          }
+        }
+        smoothed.push(sum / count);
+      }
+      return smoothed;
+    }
+
     function processData() {
       const loadingElement = document.getElementById('loading');
       const chartElement = document.getElementById('myChart');
@@ -994,20 +1011,21 @@ Timestamp,BD1_TR1_MAIN,BD1_TR2_MAIN,BD1_TR3_MAIN,BD2_TR1_MAIN,BD2_TR2_MAIN,BD2_T
       for (let i = 1; i < filteredData.headers.length; i++) {
         const label = filteredData.headers[i];
         const color = colors[(i - 1) % colors.length];
-        const values = filteredData.data.map(row => {
+        let values = filteredData.data.map(row => {
           const value = parseFloat(row[i]);
           return isNaN(value) ? 0 : value;
         });
+        values = smoothData(values, 5); // Apply smoothing with window size 5
         allDatasets.push({
           label,
           data: values,
           borderColor: color,
           backgroundColor: color + '20',
-          borderWidth: 3,
+          borderWidth: 2,
           fill: false,
           tension: 0.4,
           pointRadius: 0,
-          pointHoverRadius: 6,
+          pointHoverRadius: 5,
           pointHoverBackgroundColor: color,
           pointHoverBorderColor: '#fff',
           pointHoverBorderWidth: 3
@@ -1291,10 +1309,10 @@ Timestamp,BD1_TR1_MAIN,BD1_TR2_MAIN,BD1_TR3_MAIN,BD2_TR1_MAIN,BD2_TR2_MAIN,BD2_T
         };
       }
 
-      const building1Total = [];
-      const building2Total = [];
-      const building3Total = [];
-      const currentTotal = [];
+      let building1Total = [];
+      let building2Total = [];
+      let building3Total = [];
+      let currentTotal = [];
 
       filteredData.data.forEach(row => {
         let b1Total = 0;
@@ -1311,11 +1329,17 @@ Timestamp,BD1_TR1_MAIN,BD1_TR2_MAIN,BD1_TR3_MAIN,BD2_TR1_MAIN,BD2_TR2_MAIN,BD2_T
             b3Total += value;
           }
         }
-        building1Total.push(b1Total.toFixed(1));
-        building2Total.push(b2Total.toFixed(1));
-        building3Total.push(b3Total.toFixed(1));
-        currentTotal.push((b1Total + b2Total + b3Total).toFixed(1));
+        building1Total.push(b1Total);
+        building2Total.push(b2Total);
+        building3Total.push(b3Total);
+        currentTotal.push(b1Total + b2Total + b3Total);
       });
+
+      // Apply smoothing to totals
+      building1Total = smoothData(building1Total, 5).map(v => v.toFixed(1));
+      building2Total = smoothData(building2Total, 5).map(v => v.toFixed(1));
+      building3Total = smoothData(building3Total, 5).map(v => v.toFixed(1));
+      currentTotal = smoothData(currentTotal, 5).map(v => v.toFixed(1));
 
       return { building1Total, building2Total, building3Total, currentTotal };
     }
@@ -1339,11 +1363,11 @@ Timestamp,BD1_TR1_MAIN,BD1_TR2_MAIN,BD1_TR3_MAIN,BD2_TR1_MAIN,BD2_TR2_MAIN,BD2_T
               data: building1Total,
               borderColor: '#FF6B6B',
               backgroundColor: '#FF6B6B20',
-              borderWidth: 3,
+              borderWidth: 2,
               fill: false,
               tension: 0.4,
               pointRadius: 0,
-              pointHoverRadius: 6,
+              pointHoverRadius: 5,
               pointHoverBackgroundColor: '#FF6B6B',
               pointHoverBorderColor: '#fff',
               pointHoverBorderWidth: 3
@@ -1353,11 +1377,11 @@ Timestamp,BD1_TR1_MAIN,BD1_TR2_MAIN,BD1_TR3_MAIN,BD2_TR1_MAIN,BD2_TR2_MAIN,BD2_T
               data: building2Total,
               borderColor: '#4ECDC4',
               backgroundColor: '#4ECDC420',
-              borderWidth: 3,
+              borderWidth: 2,
               fill: false,
               tension: 0.4,
               pointRadius: 0,
-              pointHoverRadius: 6,
+              pointHoverRadius: 5,
               pointHoverBackgroundColor: '#4ECDC4',
               pointHoverBorderColor: '#fff',
               pointHoverBorderWidth: 3
@@ -1367,11 +1391,11 @@ Timestamp,BD1_TR1_MAIN,BD1_TR2_MAIN,BD1_TR3_MAIN,BD2_TR1_MAIN,BD2_TR2_MAIN,BD2_T
               data: building3Total,
               borderColor: '#45B7D1',
               backgroundColor: '#45B7D120',
-              borderWidth: 3,
+              borderWidth: 2,
               fill: false,
               tension: 0.4,
               pointRadius: 0,
-              pointHoverRadius: 6,
+              pointHoverRadius: 5,
               pointHoverBackgroundColor: '#45B7D1',
               pointHoverBorderColor: '#fff',
               pointHoverBorderWidth: 3
@@ -1381,11 +1405,11 @@ Timestamp,BD1_TR1_MAIN,BD1_TR2_MAIN,BD1_TR3_MAIN,BD2_TR1_MAIN,BD2_TR2_MAIN,BD2_T
               data: currentTotal,
               borderColor: '#96CEB4',
               backgroundColor: '#96CEB420',
-              borderWidth: 3,
+              borderWidth: 2,
               fill: false,
               tension: 0.4,
               pointRadius: 0,
-              pointHoverRadius: 6,
+              pointHoverRadius: 5,
               pointHoverBackgroundColor: '#96CEB4',
               pointHoverBorderColor: '#fff',
               pointHoverBorderWidth: 3
@@ -1653,5 +1677,3 @@ Timestamp,BD1_TR1_MAIN,BD1_TR2_MAIN,BD1_TR3_MAIN,BD2_TR1_MAIN,BD2_TR2_MAIN,BD2_T
   </script>
 </body>
 </html>
-
-
