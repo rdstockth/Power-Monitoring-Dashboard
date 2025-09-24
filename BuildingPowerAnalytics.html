@@ -420,11 +420,6 @@
       color: white;
       box-shadow: 0 5px 20px rgba(230, 57, 70, 0.3);
     }
-    .btn-expand-data {
-      background: linear-gradient(135deg, #ff6b9b, #ff99cc);
-      color: white;
-      box-shadow: 0 5px 20px rgba(255, 107, 155, 0.3);
-    }
     .btn-tree-map {
       background: linear-gradient(135deg, #9b59b6, #d7bde2);
       color: white;
@@ -436,11 +431,11 @@
       box-shadow: 0 5px 20px rgba(0, 180, 216, 0.3);
       display: none;
     }
-    .btn:hover, .btn-deselect-all:hover, .btn-expand-data:hover, .btn-tree-map:hover, .btn-switch-unit:hover {
+    .btn:hover, .btn-deselect-all:hover, .btn-tree-map:hover, .btn-switch-unit:hover {
       transform: translateY(-3px);
       box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
     }
-    .btn:active, .btn-deselect-all:active, .btn-expand-data:active, .btn-tree-map:active, .btn-switch-unit:active {
+    .btn:active, .btn-deselect-all:active, .btn-tree-map:active, .btn-switch-unit:active {
       transform: translateY(-1px);
     }
     .chart-container {
@@ -564,7 +559,6 @@
       }
       .action-buttons .btn,
       .action-buttons .btn-deselect-all,
-      .action-buttons .btn-expand-data,
       .action-buttons .btn-tree-map,
       .action-buttons .btn-switch-unit {
         flex: 1;
@@ -778,9 +772,6 @@
         <button class="btn btn-info" onclick="exportPNG()">
           <i class="fas fa-image"></i> Export Image
         </button>
-        <button class="btn btn-expand-data" onclick="toggleTotalChart()">
-          <i class="fas fa-expand"></i> Expand Data
-        </button>
         <button class="btn btn-tree-map" onclick="toggleTreeMap()">
           <i class="fas fa-sitemap"></i> Allocation Tree Map
         </button>
@@ -806,10 +797,10 @@
         </div>
         <canvas id="myChart" style="display: none;"></canvas>
       </div>
-      <div class="chart-header" id="totalChartHeader" style="display: none;">
+      <div class="chart-header" id="totalChartHeader">
         <div class="chart-title"><i class="fas fa-chart-line"></i> Total Power Metrics</div>
       </div>
-      <div class="chart-wrapper" id="totalChartWrapper" style="display: none;">
+      <div class="chart-wrapper" id="totalChartWrapper">
         <canvas id="totalChart"></canvas>
       </div>
     </div>
@@ -823,7 +814,7 @@
     let allDatasets = [];
     let filteredData = null;
     let refreshInterval = null;
-    let isTotalChartVisible = false;
+    let isTotalChartVisible = true;
     let isTreeMapVisible = false;
     let isKWhMode = false;
     const colors = [
@@ -1648,26 +1639,6 @@ Timestamp,BD1_DB1_BD6,BD1_DB2_UTILITIES,BD1_DB4_COATING
           }
         }
       });
-    }
-
-    function toggleTotalChart() {
-      const totalChartWrapper = document.getElementById('totalChartWrapper');
-      const totalChartHeader = document.getElementById('totalChartHeader');
-      const expandButton = document.querySelector('button[onclick="toggleTotalChart()"]');
-      isTotalChartVisible = !isTotalChartVisible;
-
-      if (isTotalChartVisible) {
-        totalChartWrapper.style.display = 'block';
-        totalChartHeader.style.display = 'block';
-        expandButton.innerHTML = '<i class="fas fa-compress"></i> Collapse Data';
-        if (!totalChartInstance) {
-          createTotalChart();
-        }
-      } else {
-        totalChartWrapper.style.display = 'none';
-        totalChartHeader.style.display = 'none';
-        expandButton.innerHTML = '<i class="fas fa-expand"></i> Expand Data';
-      }
     }
 
     function toggleTreeMap() {
