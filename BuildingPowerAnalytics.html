@@ -1,703 +1,719 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
- <meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>Power Monitoring Dashboard</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Power Monitoring Dashboard</title>
 
-<!-- Font Awesome with lazy load -->
-<link rel="preload" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.1/css/all.min.css" as="style" onload="this.onload=null;this.rel='stylesheet'">
-<noscript><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.1/css/all.min.css"></noscript>
+  <!-- Font Awesome with lazy load -->
+  <link rel="preload" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.1/css/all.min.css" as="style" onload="this.onload=null;this.rel='stylesheet'">
+  <noscript><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.1/css/all.min.css"></noscript>
 
-<!-- Preload Chart.js -->
-<link rel="preload" href="https://cdn.jsdelivr.net/npm/chart.js" as="script" crossorigin>
+  <!-- Preload Chart.js -->
+  <link rel="preload" href="https://cdn.jsdelivr.net/npm/chart.js" as="script" crossorigin>
 
-<!-- Load Chart.js deferred -->
-<script src="https://cdn.jsdelivr.net/npm/chart.js" defer crossorigin></script>
+  <!-- Load Chart.js deferred -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js" defer crossorigin></script>
 
-<style>
-  * {
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
-  }
-  body {
-    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-    background: linear-gradient(105deg, #66FF99 0%, #FFFF99 100%);
-    min-height: 100vh;
-    padding: 20px;
-    -webkit-user-select: none;
-    -moz-user-select: none;
-    -ms-user-select: none;
-    user-select: none;
-  }
-  .container {
-    max-width: 100%;
-    margin-top: 60px;
-    background: rgba(255, 255, 255, 0.1);
-    backdrop-filter: blur(20px);
-    border-radius: 30px;
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    box-shadow: 0 30px 60px rgba(0, 0, 0, 0.15);
-    overflow: hidden;
-    position: relative;
-  }
-  .container::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    height: 2px;
-    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.8), transparent);
-    animation: shimmer 2s infinite;
-  }
-  @keyframes shimmer {
-    0% { transform: translateX(-100%); }
-    100% { transform: translateX(100%); }
-  }
-  .header {
-    background: linear-gradient(135deg, #256eff 0%, #6fd0ff 100%);
-    padding: 40px 30px 20px;
-    text-align: center;
-    color: white;
-    position: relative;
-    overflow: hidden;
-  }
-  .header::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="grid" width="10" height="10" patternUnits="userSpaceOnUse"><path d="M 10 0 L 0 0 0 10" fill="none" stroke="rgba(255,255,255,0.1)" stroke-width="0.5"/></pattern></defs><rect width="100" height="100" fill="url(%23grid)"/></svg>');
-    opacity: 0.4;
-    box-shadow: inset 0 0 10px rgba(255, 255, 255, 0.2);
-  }
-  .header h1 {
-    font-size: 3em;
-    margin-bottom: 15px;
-    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0);
-    position: relative;
-    z-index: 1;
-    background: linear-gradient(45deg, #ffd700, #ffcc00);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
-  }
-  .header p {
-    font-size: 1.3em;
-    opacity: 0.95;
-    position: relative;
-    z-index: 1;
-    font-weight: 400;
-    letter-spacing: 0.8px;
-  }
-  .topbar {
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    height: 60px;
-    background: linear-gradient(90deg, #256eff 0%, #6fd0ff 100%);
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-    z-index: 9999;
-    transition: all 0.3s ease;
-  }
-  .topbar-items {
-    display: flex;
-    gap: 20px;
-  }
-  .topbar-item {
-    padding: 10px 20px;
-    display: flex;
-    align-items: center;
-    color: white;
-    text-decoration: none;
-    font-size: 16px;
-    font-weight: 500;
-    transition: all 0.3s ease;
-    position: relative;
-    border-radius: 25px;
-  }
-  .topbar-item i {
-    font-size: 20px;
-    margin-right: 8px;
-  }
-  .topbar-item:hover {
-    background: rgba(255, 255, 255, 0.2);
-    transform: translateY(-2px);
-  }
-  .topbar-item::before {
-    content: '';
-    position: absolute;
-    bottom: 0;
-    left: 50%;
-    width: 0;
-    height: 2px;
-    background: linear-gradient(45deg, #ffd700, #ffcc00);
-    transition: all 0.3s ease;
-    transform: translateX(-50%);
-  }
-  .topbar-item:hover::before {
-    width: 80%;
-  }
-  .controls {
-    padding: 20px 30px;
-    background: rgba(255, 255, 255, 0.95);
-    backdrop-filter: blur(10px);
-    border-bottom: 1px solid rgba(0, 0, 0, 0.1);
-  }
-  .stats {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-    gap: 25px;
-    margin-bottom: 20px;
-  }
-  .stat-card {
-    background: linear-gradient(135deg, #fff 0%, #f8f9fa 100%);
-    padding: 30px;
-    border-radius: 20px;
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
-    text-align: center;
-    transition: all 0.4s ease;
-    border: 1px solid rgba(255, 255, 255, 0.5);
-    position: relative;
-    overflow: hidden;
-  }
-  .stat-card::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    height: 4px;
-    background: linear-gradient(90deg, #256eff, #6fd0ff);
-    transform: scaleX(0);
-    transition: transform 0.4s ease;
-  }
-  .stat-card:hover::before {
-    transform: scaleX(1);
-  }
-  .stat-card:hover {
-    transform: translateY(-10px) scale(1.02);
-    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
-  }
-  .stat-icon {
-    font-size: 2.5em;
-    margin-bottom: 15px;
-    background: linear-gradient(45deg, #256eff, #6fd0ff);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
-  }
-  .stat-number {
-    font-size: 2.5em;
-    font-weight: 800;
-    background: linear-gradient(45deg, #256eff, #6fd0ff);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
-    margin-bottom: 10px;
-    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1);
-  }
-  .stat-label {
-    color: #6c757d;
-    font-size: 0.95em;
-    text-transform: uppercase;
-    letter-spacing: 1px;
-    font-weight: 600;
-  }
-  .control-group {
-    margin-bottom: 20px;
-  }
-  .control-group label {
-    display: block;
-    margin-bottom: 15px;
-    font-weight: 700;
-    color: #495057;
-    font-size: 1.1em;
-    letter-spacing: 0.5px;
-  }
-  #meterSearch {
-    width: 100%;
-    padding: 10px 15px;
-    border: 2px solid #e9ecef;
-    border-radius: 8px;
-    font-size: 14px;
-    margin-bottom: 15px;
-    transition: border-color 0.3s ease;
-  }
-  #meterSearch:focus {
-    outline: none;
-    border-color: #256eff;
-    box-shadow: 0 0 0 3px rgba(37, 111, 255, 0.1);
-  }
-  .meter-filters {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-    gap: 10px;
-    margin-bottom: 30px;
-    max-height: 400px;
-    overflow-y: auto;
-    padding: 5px;
-  }
-  .meter-filters::-webkit-scrollbar {
-    width: 6px;
-  }
-  .meter-filters::-webkit-scrollbar-track {
-    background: #f1f1f1;
-    border-radius: 3px;
-  }
-  .meter-filters::-webkit-scrollbar-thumb {
-    background: #c1c1c1;
-    border-radius: 3px;
-  }
-  .meter-filters::-webkit-scrollbar-thumb:hover {
-    background: #a8a8a8;
-  }
-  .filter-item {
-    display: flex;
-    align-items: center;
-    padding: 12px 15px;
-    background: linear-gradient(135deg, #fff 0%, #f8f9fa 100%);
-    border-radius: 12px;
-    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.05);
-    transition: all 0.3s ease;
-    min-height: 48px;
-    position: relative;
-    border: 2px solid transparent;
-    cursor: pointer;
-  }
-  .filter-item::before {
-    content: '';
-    position: absolute;
-    left: 0;
-    top: 0;
-    bottom: 0;
-    width: 4px;
-    border-radius: 12px 0 0 12px;
-    background-color: #e0e0e0;
-    transition: all 0.3s ease;
-  }
-  .filter-item.status-active::before {
-    background: linear-gradient(135deg, #4caf50, #8bc34a);
-    box-shadow: 0 0 10px rgba(76, 175, 80, 0.3);
-  }
-  .filter-item.status-standby::before {
-    background: linear-gradient(135deg, #ff9800, #ffc107);
-    box-shadow: 0 0 10px rgba(255, 152, 0, 0.3);
-  }
-  .filter-item.status-off::before {
-    background: linear-gradient(135deg, #f44336, #e57373);
-    box-shadow: 0 0 10px rgba(124, 67, 54, 0.3);
-  }
-  .filter-item:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.1);
-    border-color: rgba(37, 111, 255, 0.2);
-  }
-  .filter-item input[type="checkbox"] {
-    margin-right: 12px;
-    transform: scale(1.2);
-    cursor: pointer;
-    accent-color: #256eff;
-  }
-  .filter-item label {
-    margin: 0;
-    cursor: pointer;
-    flex: 1;
-    font-size: 14px;
-    font-weight: 500;
-    color: #495057;
-    transition: color 0.3s ease;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
-  .filter-item:hover label {
-    color: #256eff;
-  }
-  .color-indicator {
-    width: 20px;
-    height: 20px;
-    border-radius: 50%;
-    margin-left: 10px;
-    border: 2px solid white;
-    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
-    flex-shrink: 0;
-    position: relative;
-    overflow: hidden;
-  }
-  .color-indicator::after {
-    content: '';
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    width: 4px;
-    height: 4px;
-    background: rgba(255, 255, 255, 0.8);
-    border-radius: 50%;
-    transform: translate(-50%, -50%);
-    animation: glow 2s infinite;
-  }
-  @keyframes glow {
-    0%, 100% { opacity: 0.3; }
-    50% { opacity: 1; }
-  }
-  .action-buttons {
-    display: flex;
-    gap: 20px;
-    justify-content: center;
-    flex-wrap: wrap;
-    margin-top: 20px;
-  }
-  .btn {
-    padding: 15px 30px;
-    border: none;
-    border-radius: 30px;
-    font-size: 16px;
-    font-weight: 700;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    text-transform: uppercase;
-    letter-spacing: 1px;
-    position: relative;
-    overflow: hidden;
-    min-width: 160px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-  }
-  .btn::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: -100%;
-    width: 100%;
-    height: 100%;
-    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
-    transition: left 0.5s ease;
-  }
-  .btn:hover::before {
-    left: 100%;
-  }
-  .btn-primary {
-    background: linear-gradient(135deg, #256eff, #6fd0ff);
-    color: white;
-    box-shadow: 0 5px 20px rgba(37, 111, 255, 0.3);
-  }
-  .btn-success {
-    background: linear-gradient(135deg, #4caf50, #8bc34a);
-    color: white;
-    box-shadow: 0 5px 20px rgba(76, 175, 80, 0.3);
-  }
-  .btn-info {
-    background: linear-gradient(135deg, #6633FF, #66CCFF);
-    color: white;
-    box-shadow: 0 5px 20px rgba(33, 150, 123, 0.3);
-  }
-  .btn-warning {
-    background: linear-gradient(135deg, #ff9800, #ffc107);
-    color: white;
-    box-shadow: 0 5px 20px rgba(255, 152, 0, 0.3);
-  }
-  .btn-secondary {
-    background: linear-gradient(135deg, #6c757d, #adb5bd);
-    color: white;
-    box-shadow: 0 5px 20px rgba(108, 117, 125, 0.3);
-  }
-  .btn-deselect-all {
-    background: linear-gradient(135deg, #e63946, #f25c68);
-    color: white;
-    box-shadow: 0 5px 20px rgba(230, 57, 70, 0.3);
-  }
-  .btn-expand-data {
-    background: linear-gradient(135deg, #ff6b9b, #ff99cc);
-    color: white;
-    box-shadow: 0 5px 20px rgba(255, 107, 155, 0.3);
-  }
-  .btn:hover, .btn-deselect-all:hover, .btn-expand-data:hover {
-    transform: translateY(-3px);
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
-  }
-  .btn:active, .btn-deselect-all:active, .btn-expand-data:active {
-    transform: translateY(-1px);
-  }
-  .chart-container {
-    padding: 10px 20px;
-    background: linear-gradient(135deg, #fff 0%, #f8f9fa 100%);
-    position: relative;
-  }
-  .chart-header {
-    text-align: center;
-    margin-bottom: -15px;
-    padding: 10px 0;
-  }
-  .chart-title {
-    font-size: 1.8em;
-    font-weight: 700;
-    background: linear-gradient(45deg, #256eff, #6fd0ff);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
-    margin-bottom: 15px;
-  }
-  .chart-wrapper {
-    position: relative;
-    min-height: 650px;
-    background: linear-gradient(135deg, #fff 0%, #f8f9fa 100%);
-    border-radius: 20px;
-    padding: 15px;
-    box-shadow: inset 0 5px 20px rgba(0, 0, 0, 0.05);
-    border: 1px solid rgba(37, 111, 255, 0.1);
-    transition: height 0.3s ease;
-  }
-  #totalChartWrapper {
-    min-height: 550px;
-    margin-top: 5px;
-    transition: height 0.3s ease;
-  }
-  .loading {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    height: 100%;
-    min-height: 300px;
-  }
-  .spinner {
-    width: 40px;
-    height: 40px;
-    border: 4px solid #f3f3f3;
-    border-top: 4px solid #256eff;
-    border-radius: 50%;
-    animation: spin 1s linear infinite;
-  }
-  .loading-text {
-    margin-top: 20px;
-    color: #495057;
-    font-size: 16px;
-    text-align: center;
-  }
-  @keyframes spin {
-    0% { transform: rotate(0deg); }
-    100% { transform: rotate(360deg); }
-  }
-  .error-modal {
-    position: fixed;
-    top: 20px;
-    left: 50%;
-    transform: translateX(-50%);
-    background: #f44336;
-    color: white;
-    padding: 15px;
-    border-radius: 8px;
-    box-shadow: 0 4px 8px rgba(0,0,0,0.2);
-    z-index: 10000;
-    display: flex;
-    gap: 10px;
-    align-items: center;
-  }
-  .error-modal button {
-    padding: 8px 16px;
-    border: none;
-    border-radius: 4px;
-    background: #fff;
-    color: #f44336;
-    cursor: pointer;
-    font-weight: 600;
-  }
-  @media (max-width: 1012px) {
-    .chart-wrapper, #totalChartWrapper {
-      min-height: 420px;
-      padding: 20px;
+  <!-- Load chartjs-chart-treemap -->
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-chart-treemap@2.3.0" defer crossorigin></script>
+
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
     }
-  }
-  @media (max-width: 768px) {
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: linear-gradient(105deg, #66FF99 0%, #FFFF99 100%);
+      min-height: 100vh;
+      padding: 20px;
+      -webkit-user-select: none;
+      -moz-user-select: none;
+      -ms-user-select: none;
+      user-select: none;
+    }
+    .container {
+      max-width: 100%;
+      margin-top: 60px;
+      background: rgba(255, 255, 255, 0.1);
+      backdrop-filter: blur(20px);
+      border-radius: 30px;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      box-shadow: 0 30px 60px rgba(0, 0, 0, 0.15);
+      overflow: hidden;
+      position: relative;
+    }
+    .container::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 2px;
+      background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.8), transparent);
+      animation: shimmer 2s infinite;
+    }
+    @keyframes shimmer {
+      0% { transform: translateX(-100%); }
+      100% { transform: translateX(100%); }
+    }
+    .header {
+      background: linear-gradient(135deg, #256eff 0%, #6fd0ff 100%);
+      padding: 40px 30px 20px;
+      text-align: center;
+      color: white;
+      position: relative;
+      overflow: hidden;
+    }
+    .header::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="grid" width="10" height="10" patternUnits="userSpaceOnUse"><path d="M 10 0 L 0 0 0 10" fill="none" stroke="rgba(255,255,255,0.1)" stroke-width="0.5"/></pattern></defs><rect width="100" height="100" fill="url(%23grid)"/></svg>');
+      opacity: 0.4;
+      box-shadow: inset 0 0 10px rgba(255, 255, 255, 0.2);
+    }
+    .header h1 {
+      font-size: 3em;
+      margin-bottom: 15px;
+      text-shadow: 2px 2px 4px rgba(0, 0, 0, 0);
+      position: relative;
+      z-index: 1;
+      background: linear-gradient(45deg, #ffd700, #ffcc00);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .header p {
+      font-size: 1.3em;
+      opacity: 0.95;
+      position: relative;
+      z-index: 1;
+      font-weight: 400;
+      letter-spacing: 0.8px;
+    }
     .topbar {
-      height: 50px;
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 60px;
+      background: linear-gradient(90deg, #256eff 0%, #6fd0ff 100%);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+      z-index: 9999;
+      transition: all 0.3s ease;
     }
     .topbar-items {
-      gap: 10px;
+      display: flex;
+      gap: 20px;
     }
     .topbar-item {
-      padding: 8px 15px;
-      font-size: 14px;
-    }
-    .topbar-item i {
+      padding: 10px 20px;
+      display: flex;
+      align-items: center;
+      color: white;
+      text-decoration: none;
       font-size: 16px;
-      margin-right: 6px;
-    }
-    .container {
-      margin-top: 50px;
-    }
-    .chart-wrapper, #totalChartWrapper {
-      min-height: 400px;
-      padding: 15px;
-    }
-    .chart-title {
-      font-size: 1.4em;
-    }
-    .action-buttons {
-      flex-direction: column;
-      align-items: stretch;
-    }
-    .action-buttons .btn,
-    .action-buttons .btn-deselect-all,
-    .action-buttons .btn-expand-data {
-      flex: 1;
-      min-width: 100%;
-      max-width: 350px;
-      margin: 5px auto;
-      text-align: center;
-    }
-    .meter-filters {
-      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-      gap: 8px;
-    }
-    .filter-item {
-      padding: 10px 12px;
-      min-height: 44px;
-    }
-    .filter-item label {
-      font-size: 13px;
-    }
-  }
-  @media (max-width: 480px) {
-    .chart-title {
-      font-size: 1.2em;
-    }
-    .chart-wrapper, #totalChartWrapper {
-      min-height: 350px;
-    }
-    .meter-filters {
-      grid-template-columns: 1fr;
-      max-height: 300px;
-    }
-  }
-  @media (max-width: 430px) {
-    .header h1 {
-      font-size: 2.5em;
-    }
-    .header p {
-      font-size: 1.1em;
-    }
-    .stat-card {
-      padding: 20px;
-    }
-    .stat-number {
-      font-size: 2em;
-    }
-    .btn {
-      padding: 12px 25px;
-      font-size: 14px;
-    }
-    .chart-title {
-      font-size: 1.1em;
-    }
-    .chart-wrapper, #totalChartWrapper {
-      min-height: 320px;
-    }
-    .filter-item label {
-      font-size: 12px;
-    }
-  }
-  @media (min-width: 1920px) {
-    body {
-      padding: 30px;
-    }
-    .container {
-      max-width: calc(100% - 60px);
-      margin: 70px auto 30px;
-    }
-    .topbar {
-      height: 70px;
+      font-weight: 500;
+      transition: all 0.3s ease;
+      position: relative;
+      border-radius: 25px;
     }
     .topbar-item i {
-      font-size: 24px;
-      margin-right: 12px;
-    }
-    .topbar-item {
-      font-size: 18px;
-      padding: 15px 25px;
-    }
-    .header h1 {
-      font-size: 3.5em;
-    }
-    .header p {
-      font-size: 1.5em;
-    }
-    .stat-card {
-      padding: 40px;
-    }
-    .stat-number {
-      font-size: 3em;
-    }
-    .stat-label {
-      font-size: 1.1em;
-    }
-    .chart-wrapper, #totalChartWrapper {
-      min-height: 550px;
-      padding: 30px;
-    }
-    .chart-title {
-      font-size: 2.2em;
-    }
-    .meter-filters {
-      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-      gap: 12px;
-    }
-  }
-  @media (min-width: 2560px) {
-    body {
-      font-size: 18px;
-      padding: 40px;
-    }
-    .container {
-      max-width: 2200px;
-      margin: 80px auto 40px;
-    }
-    .topbar {
-      height: 80px;
-    }
-    .topbar-item {
       font-size: 20px;
-      padding: 18px 30px;
+      margin-right: 8px;
     }
-    .header h1 {
-      font-size: 4em;
+    .topbar-item:hover {
+      background: rgba(255, 255, 255, 0.2);
+      transform: translateY(-2px);
     }
-    .header p {
-      font-size: 1.8em;
+    .topbar-item::before {
+      content: '';
+      position: absolute;
+      bottom: 0;
+      left: 50%;
+      width: 0;
+      height: 2px;
+      background: linear-gradient(45deg, #ffd700, #ffcc00);
+      transition: all 0.3s ease;
+      transform: translateX(-50%);
+    }
+    .topbar-item:hover::before {
+      width: 80%;
+    }
+    .controls {
+      padding: 20px 30px;
+      background: rgba(255, 255, 255, 0.95);
+      backdrop-filter: blur(10px);
+      border-bottom: 1px solid rgba(0, 0, 0, 0.1);
     }
     .stats {
-      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-      gap: 35px;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 25px;
+      margin-bottom: 20px;
+    }
+    .stat-card {
+      background: linear-gradient(135deg, #fff 0%, #f8f9fa 100%);
+      padding: 30px;
+      border-radius: 20px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+      text-align: center;
+      transition: all 0.4s ease;
+      border: 1px solid rgba(255, 255, 255, 0.5);
+      position: relative;
+      overflow: hidden;
+    }
+    .stat-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 4px;
+      background: linear-gradient(90deg, #256eff, #6fd0ff);
+      transform: scaleX(0);
+      transition: transform 0.4s ease;
+    }
+    .stat-card:hover::before {
+      transform: scaleX(1);
+    }
+    .stat-card:hover {
+      transform: translateY(-10px) scale(1.02);
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+    }
+    .stat-icon {
+      font-size: 2.5em;
+      margin-bottom: 15px;
+      background: linear-gradient(45deg, #256eff, #6fd0ff);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
     }
     .stat-number {
-      font-size: 3.5em;
-    }
-    .chart-wrapper, #totalChartWrapper {
-      min-height: 600px;
-    }
-    .chart-title {
       font-size: 2.5em;
+      font-weight: 800;
+      background: linear-gradient(45deg, #256eff, #6fd0ff);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      margin-bottom: 10px;
+      text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1);
+    }
+    .stat-label {
+      color: #6c757d;
+      font-size: 0.95em;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      font-weight: 600;
+    }
+    .control-group {
+      margin-bottom: 20px;
+    }
+    .control-group label {
+      display: block;
+      margin-bottom: 15px;
+      font-weight: 700;
+      color: #495057;
+      font-size: 1.1em;
+      letter-spacing: 0.5px;
+    }
+    #meterSearch {
+      width: 100%;
+      padding: 10px 15px;
+      border: 2px solid #e9ecef;
+      border-radius: 8px;
+      font-size: 14px;
+      margin-bottom: 15px;
+      transition: border-color 0.3s ease;
+    }
+    #meterSearch:focus {
+      outline: none;
+      border-color: #256eff;
+      box-shadow: 0 0 0 3px rgba(37, 111, 255, 0.1);
     }
     .meter-filters {
-      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-      gap: 15px;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 10px;
+      margin-bottom: 30px;
+      max-height: 400px;
+      overflow-y: auto;
+      padding: 5px;
     }
-  }
-</style>
+    .meter-filters::-webkit-scrollbar {
+      width: 6px;
+    }
+    .meter-filters::-webkit-scrollbar-track {
+      background: #f1f1f1;
+      border-radius: 3px;
+    }
+    .meter-filters::-webkit-scrollbar-thumb {
+      background: #c1c1c1;
+      border-radius: 3px;
+    }
+    .meter-filters::-webkit-scrollbar-thumb:hover {
+      background: #a8a8a8;
+    }
+    .filter-item {
+      display: flex;
+      align-items: center;
+      padding: 12px 15px;
+      background: linear-gradient(135deg, #fff 0%, #f8f9fa 100%);
+      border-radius: 12px;
+      box-shadow: 0 3px 10px rgba(0, 0, 0, 0.05);
+      transition: all 0.3s ease;
+      min-height: 48px;
+      position: relative;
+      border: 2px solid transparent;
+      cursor: pointer;
+    }
+    .filter-item::before {
+      content: '';
+      position: absolute;
+      left: 0;
+      top: 0;
+      bottom: 0;
+      width: 4px;
+      border-radius: 12px 0 0 12px;
+      background-color: #e0e0e0;
+      transition: all 0.3s ease;
+    }
+    .filter-item.status-active::before {
+      background: linear-gradient(135deg, #4caf50, #8bc34a);
+      box-shadow: 0 0 10px rgba(76, 175, 80, 0.3);
+    }
+    .filter-item.status-standby::before {
+      background: linear-gradient(135deg, #ff9800, #ffc107);
+      box-shadow: 0 0 10px rgba(255, 152, 0, 0.3);
+    }
+    .filter-item.status-off::before {
+      background: linear-gradient(135deg, #f44336, #e57373);
+      box-shadow: 0 0 10px rgba(124, 67, 54, 0.3);
+    }
+    .filter-item:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.1);
+      border-color: rgba(37, 111, 255, 0.2);
+    }
+    .filter-item input[type="checkbox"] {
+      margin-right: 12px;
+      transform: scale(1.2);
+      cursor: pointer;
+      accent-color: #256eff;
+    }
+    .filter-item label {
+      margin: 0;
+      cursor: pointer;
+      flex: 1;
+      font-size: 14px;
+      font-weight: 500;
+      color: #495057;
+      transition: color 0.3s ease;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .filter-item:hover label {
+      color: #256eff;
+    }
+    .color-indicator {
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      margin-left: 10px;
+      border: 2px solid white;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+      flex-shrink: 0;
+      position: relative;
+      overflow: hidden;
+    }
+    .color-indicator::after {
+      content: '';
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: 4px;
+      height: 4px;
+      background: rgba(255, 255, 255, 0.8);
+      border-radius: 50%;
+      transform: translate(-50%, -50%);
+      animation: glow 2s infinite;
+    }
+    @keyframes glow {
+      0%, 100% { opacity: 0.3; }
+      50% { opacity: 1; }
+    }
+    .action-buttons {
+      display: flex;
+      gap: 20px;
+      justify-content: center;
+      flex-wrap: wrap;
+      margin-top: 20px;
+    }
+    .btn {
+      padding: 15px 30px;
+      border: none;
+      border-radius: 30px;
+      font-size: 16px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      position: relative;
+      overflow: hidden;
+      min-width: 160px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+    .btn::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: -100%;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+      transition: left 0.5s ease;
+    }
+    .btn:hover::before {
+      left: 100%;
+    }
+    .btn-primary {
+      background: linear-gradient(135deg, #256eff, #6fd0ff);
+      color: white;
+      box-shadow: 0 5px 20px rgba(37, 111, 255, 0.3);
+    }
+    .btn-success {
+      background: linear-gradient(135deg, #4caf50, #8bc34a);
+      color: white;
+      box-shadow: 0 5px 20px rgba(76, 175, 80, 0.3);
+    }
+    .btn-info {
+      background: linear-gradient(135deg, #6633FF, #66CCFF);
+      color: white;
+      box-shadow: 0 5px 20px rgba(33, 150, 123, 0.3);
+    }
+    .btn-warning {
+      background: linear-gradient(135deg, #ff9800, #ffc107);
+      color: white;
+      box-shadow: 0 5px 20px rgba(255, 152, 0, 0.3);
+    }
+    .btn-secondary {
+      background: linear-gradient(135deg, #6c757d, #adb5bd);
+      color: white;
+      box-shadow: 0 5px 20px rgba(108, 117, 125, 0.3);
+    }
+    .btn-deselect-all {
+      background: linear-gradient(135deg, #e63946, #f25c68);
+      color: white;
+      box-shadow: 0 5px 20px rgba(230, 57, 70, 0.3);
+    }
+    .btn-expand-data {
+      background: linear-gradient(135deg, #ff6b9b, #ff99cc);
+      color: white;
+      box-shadow: 0 5px 20px rgba(255, 107, 155, 0.3);
+    }
+    .btn-tree-map {
+      background: linear-gradient(135deg, #9b59b6, #d7bde2);
+      color: white;
+      box-shadow: 0 5px 20px rgba(155, 89, 182, 0.3);
+    }
+    .btn-switch-unit {
+      background: linear-gradient(135deg, #00b4d8, #90e0ef);
+      color: white;
+      box-shadow: 0 5px 20px rgba(0, 180, 216, 0.3);
+      display: none;
+    }
+    .btn:hover, .btn-deselect-all:hover, .btn-expand-data:hover, .btn-tree-map:hover, .btn-switch-unit:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+    }
+    .btn:active, .btn-deselect-all:active, .btn-expand-data:active, .btn-tree-map:active, .btn-switch-unit:active {
+      transform: translateY(-1px);
+    }
+    .chart-container {
+      padding: 10px 20px;
+      background: linear-gradient(135deg, #fff 0%, #f8f9fa 100%);
+      position: relative;
+    }
+    .chart-header {
+      text-align: center;
+      margin-bottom: -15px;
+      padding: 10px 0;
+    }
+    .chart-title {
+      font-size: 1.8em;
+      font-weight: 700;
+      background: linear-gradient(45deg, #256eff, #6fd0ff);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      margin-bottom: 15px;
+    }
+    .chart-wrapper {
+      position: relative;
+      min-height: 650px;
+      background: linear-gradient(135deg, #fff 0%, #f8f9fa 100%);
+      border-radius: 20px;
+      padding: 15px;
+      box-shadow: inset 0 5px 20px rgba(0, 0, 0, 0.05);
+      border: 1px solid rgba(37, 111, 255, 0.1);
+      transition: height 0.3s ease;
+    }
+    #totalChartWrapper, #treeMapWrapper {
+      min-height: 550px;
+      margin-top: 5px;
+      transition: height 0.3s ease;
+    }
+    .loading {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100%;
+      min-height: 300px;
+    }
+    .spinner {
+      width: 40px;
+      height: 40px;
+      border: 4px solid #f3f3f3;
+      border-top: 4px solid #256eff;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+    }
+    .loading-text {
+      margin-top: 20px;
+      color: #495057;
+      font-size: 16px;
+      text-align: center;
+    }
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+    .error-modal {
+      position: fixed;
+      top: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: #f44336;
+      color: white;
+      padding: 15px;
+      border-radius: 8px;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+      z-index: 10000;
+      display: flex;
+      gap: 10px;
+      align-items: center;
+    }
+    .error-modal button {
+      padding: 8px 16px;
+      border: none;
+      border-radius: 4px;
+      background: #fff;
+      color: #f44336;
+      cursor: pointer;
+      font-weight: 600;
+    }
+    @media (max-width: 1012px) {
+      .chart-wrapper, #totalChartWrapper, #treeMapWrapper {
+        min-height: 420px;
+        padding: 20px;
+      }
+    }
+    @media (max-width: 768px) {
+      .topbar {
+        height: 50px;
+      }
+      .topbar-items {
+        gap: 10px;
+      }
+      .topbar-item {
+        padding: 8px 15px;
+        font-size: 14px;
+      }
+      .topbar-item i {
+        font-size: 16px;
+        margin-right: 6px;
+      }
+      .container {
+        margin-top: 50px;
+      }
+      .chart-wrapper, #totalChartWrapper, #treeMapWrapper {
+        min-height: 400px;
+        padding: 15px;
+      }
+      .chart-title {
+        font-size: 1.4em;
+      }
+      .action-buttons {
+        flex-direction: column;
+        align-items: stretch;
+      }
+      .action-buttons .btn,
+      .action-buttons .btn-deselect-all,
+      .action-buttons .btn-expand-data,
+      .action-buttons .btn-tree-map,
+      .action-buttons .btn-switch-unit {
+        flex: 1;
+        min-width: 100%;
+        max-width: 350px;
+        margin: 5px auto;
+        text-align: center;
+      }
+      .meter-filters {
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 8px;
+      }
+      .filter-item {
+        padding: 10px 12px;
+        min-height: 44px;
+      }
+      .filter-item label {
+        font-size: 13px;
+      }
+    }
+    @media (max-width: 480px) {
+      .chart-title {
+        font-size: 1.2em;
+      }
+      .chart-wrapper, #totalChartWrapper, #treeMapWrapper {
+        min-height: 350px;
+      }
+      .meter-filters {
+        grid-template-columns: 1fr;
+        max-height: 300px;
+      }
+    }
+    @media (max-width: 430px) {
+      .header h1 {
+        font-size: 2.5em;
+      }
+      .header p {
+        font-size: 1.1em;
+      }
+      .stat-card {
+        padding: 20px;
+      }
+      .stat-number {
+        font-size: 2em;
+      }
+      .btn {
+        padding: 12px 25px;
+        font-size: 14px;
+      }
+      .chart-title {
+        font-size: 1.1em;
+      }
+      .chart-wrapper, #totalChartWrapper, #treeMapWrapper {
+        min-height: 320px;
+      }
+      .filter-item label {
+        font-size: 12px;
+      }
+    }
+    @media (min-width: 1920px) {
+      body {
+        padding: 30px;
+      }
+      .container {
+        max-width: calc(100% - 60px);
+        margin: 70px auto 30px;
+      }
+      .topbar {
+        height: 70px;
+      }
+      .topbar-item i {
+        font-size: 24px;
+        margin-right: 12px;
+      }
+      .topbar-item {
+        font-size: 18px;
+        padding: 15px 25px;
+      }
+      .header h1 {
+        font-size: 3.5em;
+      }
+      .header p {
+        font-size: 1.5em;
+      }
+      .stat-card {
+        padding: 40px;
+      }
+      .stat-number {
+        font-size: 3em;
+      }
+      .stat-label {
+        font-size: 1.1em;
+      }
+      .chart-wrapper, #totalChartWrapper, #treeMapWrapper {
+        min-height: 550px;
+        padding: 30px;
+      }
+      .chart-title {
+        font-size: 2.2em;
+      }
+      .meter-filters {
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        gap: 12px;
+      }
+    }
+    @media (min-width: 2560px) {
+      body {
+        font-size: 18px;
+        padding: 40px;
+      }
+      .container {
+        max-width: 2200px;
+        margin: 80px auto 40px;
+      }
+      .topbar {
+        height: 80px;
+      }
+      .topbar-item {
+        font-size: 20px;
+        padding: 18px 30px;
+      }
+      .header h1 {
+        font-size: 4em;
+      }
+      .header p {
+        font-size: 1.8em;
+      }
+      .stats {
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 35px;
+      }
+      .stat-number {
+        font-size: 3.5em;
+      }
+      .chart-wrapper, #totalChartWrapper, #treeMapWrapper {
+        min-height: 600px;
+      }
+      .chart-title {
+        font-size: 2.5em;
+      }
+      .meter-filters {
+        grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+        gap: 15px;
+      }
+    }
+  </style>
 </head>
 <body>
-   <div class="topbar">
+  <div class="topbar">
     <div class="topbar-items">
       <a href="index.html" class="topbar-item">
         <i class="fas fa-home"></i>
@@ -725,14 +741,14 @@
             <i class="fas fa-building"></i>
           </div>
           <div class="stat-number" id="totalPowerBD1">0</div>
-          <div class="stat-label">Total Power Building 1 (kW)</div>
+          <div class="stat-label" id="totalPowerBD1Label">Total Power Building 1 (kW)</div>
         </div>
         <div class="stat-card">
           <div class="stat-icon">
             <i class="fas fa-building"></i>
           </div>
           <div class="stat-number" id="totalPowerBD2">0</div>
-          <div class="stat-label">Total Power Building 2 (kW)</div>
+          <div class="stat-label" id="totalPowerBD2Label">Total Power Building 2 (kW)</div>
         </div>
       </div>
       <div class="control-group">
@@ -765,9 +781,21 @@
         <button class="btn btn-expand-data" onclick="toggleTotalChart()">
           <i class="fas fa-expand"></i> Expand Data
         </button>
+        <button class="btn btn-tree-map" onclick="toggleTreeMap()">
+          <i class="fas fa-sitemap"></i> Allocation Tree Map
+        </button>
+        <button class="btn btn-switch-unit" onclick="switchUnit()">
+          <i class="fas fa-exchange-alt"></i> Switch to kWh in Tree Map
+        </button>
       </div>
     </div>
     <div class="chart-container">
+      <div class="chart-header" id="treeMapHeader" style="display: none;">
+        <div class="chart-title"><i class="fas fa-sitemap"></i> Allocation Tree Map</div>
+      </div>
+      <div class="chart-wrapper" id="treeMapWrapper" style="display: none;">
+        <canvas id="treeMapChart"></canvas>
+      </div>
       <div class="chart-header">
         <div class="chart-title"><i class="fas fa-chart-line"></i> Power Monitoring</div>
       </div>
@@ -790,11 +818,14 @@
   <script>
     let chartInstance = null;
     let totalChartInstance = null;
+    let treeMapInstance = null;
     let rawData = null;
     let allDatasets = [];
     let filteredData = null;
     let refreshInterval = null;
     let isTotalChartVisible = false;
+    let isTreeMapVisible = false;
+    let isKWhMode = false;
     const colors = [
       '#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FECA57',
       '#FF9FF3', '#54A0FF', '#5F27CD', '#00D2D3', '#FF9F43',
@@ -861,38 +892,32 @@ Timestamp,BD1_DB1_BD6,BD1_DB2_UTILITIES,BD1_DB4_COATING
         <button onclick="this.parentElement.remove()">Close</button>
       `;
       document.body.appendChild(modal);
-      setTimeout(() => modal.remove(), 10000); // Auto-close after 10 seconds
+      setTimeout(() => modal.remove(), 10000);
     }
 
     async function fetchWithRetry(url, retries = 3, delay = 2000) {
-  let controller;
-  
-  for (let i = 0; i < retries; i++) {
-    controller = new AbortController();
-    
-    try {
-      const timeoutId = setTimeout(() => controller.abort(), 8000);
-
-      const response = await fetch(url, {
-        cache: 'no-store',
-        signal: controller.signal
-      });
-
-      clearTimeout(timeoutId);
-      
-      if (!response.ok) throw new Error(`HTTP ${response.status}`);
-      
-      return await response.text();
-    } catch (error) {
-      if (error.name === 'AbortError' && i < retries - 1) {
-        console.warn(`Attempt ${i+1} timed out, retrying...`);
-        await new Promise(r => setTimeout(r, delay));
-        continue;
+      let controller;
+      for (let i = 0; i < retries; i++) {
+        controller = new AbortController();
+        try {
+          const timeoutId = setTimeout(() => controller.abort(), 8000);
+          const response = await fetch(url, {
+            cache: 'no-store',
+            signal: controller.signal
+          });
+          clearTimeout(timeoutId);
+          if (!response.ok) throw new Error(`HTTP ${response.status}`);
+          return await response.text();
+        } catch (error) {
+          if (error.name === 'AbortError' && i < retries - 1) {
+            console.warn(`Attempt ${i+1} timed out, retrying...`);
+            await new Promise(r => setTimeout(r, delay));
+            continue;
+          }
+          if (i === retries - 1) throw error;
+        }
       }
-      if (i === retries - 1) throw error;
     }
-  }
-}
 
     async function loadData() {
       const loadingElement = document.getElementById('loading');
@@ -934,7 +959,7 @@ Timestamp,BD1_DB1_BD6,BD1_DB2_UTILITIES,BD1_DB4_COATING
           throw new Error('Received empty CSV data');
         }
 
-        const lines = csv.trim().split(/\r?\n/); // รองรับทั้ง \n และ \r\n
+        const lines = csv.trim().split(/\r?\n/);
         if (lines.length < 2) {
           throw new Error('CSV data is too short or invalid');
         }
@@ -976,6 +1001,17 @@ Timestamp,BD1_DB1_BD6,BD1_DB2_UTILITIES,BD1_DB4_COATING
       }
     }
 
+    function calculateKWh(data) {
+      const kWhData = [];
+      for (let i = 1; i < data.headers.length; i++) {
+        const values = data.data.map(row => parseFloat(row[i]) || 0);
+        const avgKW = values.reduce((sum, val) => sum + val, 0) / values.length;
+        const kWh = avgKW * 24;
+        kWhData.push(kWh.toFixed(1));
+      }
+      return kWhData;
+    }
+
     function processData() {
       const loadingElement = document.getElementById('loading');
       const chartElement = document.getElementById('myChart');
@@ -984,13 +1020,13 @@ Timestamp,BD1_DB1_BD6,BD1_DB2_UTILITIES,BD1_DB4_COATING
       for (let i = 1; i < filteredData.headers.length; i++) {
         const label = filteredData.headers[i];
         const color = colors[(i - 1) % colors.length];
-        const values = filteredData.data.map(row => {
+        const kWValues = filteredData.data.map(row => {
           const value = parseFloat(row[i]);
           return isNaN(value) ? 0 : value;
         });
         allDatasets.push({
           label,
-          data: values,
+          data: kWValues,
           borderColor: color,
           backgroundColor: color + '20',
           borderWidth: 3,
@@ -1010,6 +1046,9 @@ Timestamp,BD1_DB1_BD6,BD1_DB2_UTILITIES,BD1_DB4_COATING
       if (isTotalChartVisible) {
         createTotalChart();
       }
+      if (isTreeMapVisible) {
+        createTreeMap();
+      }
       loadingElement.style.display = 'none';
       chartElement.style.display = 'block';
     }
@@ -1023,12 +1062,13 @@ Timestamp,BD1_DB1_BD6,BD1_DB2_UTILITIES,BD1_DB4_COATING
         return;
       }
       const latestData = filteredData.data[filteredData.data.length - 1];
+      const kWhData = calculateKWh(filteredData);
 
       allDatasets.forEach((dataset, index) => {
-        const value = parseFloat(latestData[index + 1]) || 0;
+        const value = isTreeMapVisible && isKWhMode ? parseFloat(kWhData[index]) : parseFloat(latestData[index + 1]) || 0;
         let statusClass = 'status-off';
-        if (value > 1) statusClass = 'status-active';
-        else if (value > 0.05) statusClass = 'status-standby';
+        if (value > (isTreeMapVisible && isKWhMode ? 24 : 1)) statusClass = 'status-active';
+        else if (value > (isTreeMapVisible && isKWhMode ? 1.2 : 0.05)) statusClass = 'status-standby';
 
         const filterItem = document.createElement('div');
         filterItem.className = `filter-item ${statusClass}`;
@@ -1062,12 +1102,13 @@ Timestamp,BD1_DB1_BD6,BD1_DB2_UTILITIES,BD1_DB4_COATING
       const activeDatasets = [];
       const checkboxes = document.querySelectorAll('input[type="checkbox"]');
       const latestData = filteredData?.data[filteredData.data.length - 1];
+      const kWhData = calculateKWh(filteredData);
 
       checkboxes.forEach((checkbox, index) => {
-        const value = parseFloat(latestData?.[index + 1]) || 0;
+        const value = isTreeMapVisible && isKWhMode ? parseFloat(kWhData[index]) : parseFloat(latestData?.[index + 1]) || 0;
         let statusClass = 'status-off';
-        if (value > 1) statusClass = 'status-active';
-        else if (value > 0.05) statusClass = 'status-standby';
+        if (value > (isTreeMapVisible && isKWhMode ? 24 : 1)) statusClass = 'status-active';
+        else if (value > (isTreeMapVisible && isKWhMode ? 1.2 : 0.05)) statusClass = 'status-standby';
 
         const filterItem = checkbox.parentElement;
         filterItem.className = `filter-item ${statusClass}`;
@@ -1078,10 +1119,14 @@ Timestamp,BD1_DB1_BD6,BD1_DB2_UTILITIES,BD1_DB4_COATING
       });
 
       chartInstance.data.datasets = activeDatasets;
+      chartInstance.options.scales.y.title.text = 'Power (kW)';
       chartInstance.update('none');
       updateStats();
       if (isTotalChartVisible && totalChartInstance) {
         createTotalChart();
+      }
+      if (isTreeMapVisible && treeMapInstance) {
+        createTreeMap();
       }
     }
 
@@ -1091,8 +1136,6 @@ Timestamp,BD1_DB1_BD6,BD1_DB2_UTILITIES,BD1_DB4_COATING
         return;
       }
       const latestData = filteredData.data[filteredData.data.length - 1];
-      const totalPower = latestData.slice(1).reduce((sum, val) => sum + (parseFloat(val) || 0), 0);
-
       let bd1Total = 0;
       let bd2Total = 0;
 
@@ -1108,7 +1151,8 @@ Timestamp,BD1_DB1_BD6,BD1_DB2_UTILITIES,BD1_DB4_COATING
 
       animateNumber('totalPowerBD1', bd1Total);
       animateNumber('totalPowerBD2', bd2Total);
-      animateNumber('totalPower', totalPower);
+      document.getElementById('totalPowerBD1Label').textContent = 'Total Power Building 1 (kW)';
+      document.getElementById('totalPowerBD2Label').textContent = 'Total Power Building 2 (kW)';
     }
 
     function animateNumber(elementId, targetValue) {
@@ -1201,6 +1245,9 @@ Timestamp,BD1_DB1_BD6,BD1_DB2_UTILITIES,BD1_DB4_COATING
                   } catch (error) {
                     return timestamp;
                   }
+                },
+                label: function (context) {
+                  return `${context.dataset.label}: ${context.raw.toFixed(1)} kW`;
                 }
               }
             }
@@ -1282,7 +1329,7 @@ Timestamp,BD1_DB1_BD6,BD1_DB2_UTILITIES,BD1_DB4_COATING
       const bd1Total = [];
       const bd2Total = [];
 
-      filteredData.data.forEach(row => {
+      filteredData.data.forEach((row) => {
         let bd1Sum = 0;
         let bd2Sum = 0;
         for (let i = 1; i < filteredData.headers.length; i++) {
@@ -1385,6 +1432,9 @@ Timestamp,BD1_DB1_BD6,BD1_DB2_UTILITIES,BD1_DB4_COATING
                   } catch (error) {
                     return timestamp;
                   }
+                },
+                label: function (context) {
+                  return `${context.dataset.label}: ${context.raw} kW`;
                 }
               }
             }
@@ -1454,6 +1504,85 @@ Timestamp,BD1_DB1_BD6,BD1_DB2_UTILITIES,BD1_DB4_COATING
       });
     }
 
+    function createTreeMap() {
+      const ctx = document.getElementById('treeMapChart')?.getContext('2d');
+      if (!ctx) {
+        console.error('TreeMap chart canvas context not found');
+        return;
+      }
+      destroyChart(treeMapInstance, 'TreeMap');
+      const latestData = filteredData?.data[filteredData.data.length - 1];
+      const kWhData = calculateKWh(filteredData);
+      const treeData = [];
+
+      const checkboxes = document.querySelectorAll('input[type="checkbox"]');
+      checkboxes.forEach((cb, index) => {
+        if (cb.checked) {
+          const label = allDatasets[index].label;
+          const value = isKWhMode ? parseFloat(kWhData[index]) : parseFloat(latestData[index + 1]) || 0;
+          const color = allDatasets[index].borderColor;
+          if (value > 0) {
+            treeData.push({
+              name: label,
+              value: value,
+              color: color
+            });
+          }
+        }
+      });
+
+      if (treeData.length === 0) {
+        console.warn('No valid data for Tree Map');
+        return;
+      }
+
+      treeMapInstance = new Chart(ctx, {
+        type: 'treemap',
+        data: {
+          datasets: [{
+            label: 'Allocation Tree Map',
+            tree: treeData,
+            key: 'value',
+            backgroundColor: function(ctx) {
+              if (ctx.type !== 'data') return 'transparent';
+              return ctx.raw._data.color || colors[Math.floor(Math.random() * colors.length)];
+            },
+            borderColor: '#fff',
+            borderWidth: 1,
+            spacing: 1,
+            labels: {
+              display: true,
+              align: 'center',
+              position: 'center',
+              font: { size: 12, weight: 'bold' },
+              color: '#333',
+              formatter: function(ctx) {
+                if (ctx.type !== 'data') return;
+                const data = ctx.raw._data;
+                return data.name + '\n' + data.value.toFixed(1) + (isKWhMode ? ' kWh' : ' kW');
+              }
+            }
+          }]
+        },
+        options: {
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              callbacks: {
+                title: function(ctx) {
+                  return ctx[0].raw._data.name;
+                },
+                label: function(ctx) {
+                  return ctx.raw._data.value.toFixed(1) + (isKWhMode ? ' kWh' : ' kW');
+                }
+              }
+            }
+          }
+        }
+      });
+    }
+
     function toggleTotalChart() {
       const totalChartWrapper = document.getElementById('totalChartWrapper');
       const totalChartHeader = document.getElementById('totalChartHeader');
@@ -1472,6 +1601,45 @@ Timestamp,BD1_DB1_BD6,BD1_DB2_UTILITIES,BD1_DB4_COATING
         totalChartHeader.style.display = 'none';
         expandButton.innerHTML = '<i class="fas fa-expand"></i> Expand Data';
       }
+    }
+
+    function toggleTreeMap() {
+      const treeMapWrapper = document.getElementById('treeMapWrapper');
+      const treeMapHeader = document.getElementById('treeMapHeader');
+      const treeMapButton = document.querySelector('button[onclick="toggleTreeMap()"]');
+      const switchUnitButton = document.querySelector('.btn-switch-unit');
+      isTreeMapVisible = !isTreeMapVisible;
+
+      if (isTreeMapVisible) {
+        treeMapWrapper.style.display = 'block';
+        treeMapHeader.style.display = 'block';
+        treeMapButton.innerHTML = '<i class="fas fa-sitemap"></i> Hide Tree Map';
+        switchUnitButton.style.display = 'flex';
+        if (!treeMapInstance) {
+          createTreeMap();
+        }
+      } else {
+        treeMapWrapper.style.display = 'none';
+        treeMapHeader.style.display = 'none';
+        treeMapButton.innerHTML = '<i class="fas fa-sitemap"></i> Allocation Tree Map';
+        switchUnitButton.style.display = 'none';
+        if (isKWhMode) {
+          isKWhMode = false;
+          switchUnitButton.innerHTML = '<i class="fas fa-exchange-alt"></i> Switch to kWh in Tree Map';
+          createTreeMap();
+        }
+      }
+      updateChart();
+    }
+
+    function switchUnit() {
+      isKWhMode = !isKWhMode;
+      const switchButton = document.querySelector('button[onclick="switchUnit()"]');
+      switchButton.innerHTML = `<i class="fas fa-exchange-alt"></i> Switch to ${isKWhMode ? 'kW' : 'kWh'} in Tree Map`;
+      if (isTreeMapVisible) {
+        createTreeMap();
+      }
+      updateChart();
     }
 
     function selectAll() {
@@ -1513,8 +1681,9 @@ Timestamp,BD1_DB1_BD6,BD1_DB2_UTILITIES,BD1_DB4_COATING
         showErrorModal('No meters selected.');
         return;
       }
+      const kWhData = calculateKWh(filteredData);
       const meterAverages = activeIndices.map(index => {
-        const values = allDatasets[index].data;
+        const values = isTreeMapVisible && isKWhMode ? [parseFloat(kWhData[index])] : allDatasets[index].data;
         const sum = values.reduce((acc, val) => acc + val, 0);
         const avg = values.length > 0 ? sum / values.length : 0;
         return { index, avg };
@@ -1538,68 +1707,70 @@ Timestamp,BD1_DB1_BD6,BD1_DB2_UTILITIES,BD1_DB4_COATING
         if (cb.checked) activeColumns.push(index + 1);
       });
 
+      const kWhData = calculateKWh(rawData);
       let csvContent = rawData.headers.filter((_, i) => activeColumns.includes(i)).join(',') + '\n';
-      rawData.data.forEach(row => {
-        csvContent += row.filter((_, i) => activeColumns.includes(i)).join(',') + '\n';
+      rawData.data.forEach((row, rowIndex) => {
+        const rowData = row.map((value, colIndex) => {
+          if (colIndex === 0) return value;
+          if (activeColumns.includes(colIndex)) {
+            return isTreeMapVisible && isKWhMode ? kWhData[colIndex - 1] : value;
+          }
+          return value;
+        });
+        csvContent += rowData.filter((_, i) => activeColumns.includes(i)).join(',') + '\n';
       });
 
       const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
       const link = document.createElement('a');
       link.href = URL.createObjectURL(blob);
-      link.download = `power_data_${new Date().toISOString().split('T')[0]}.csv`;
+      link.download = `power_data_${new Date().toISOString().split('T')[0]}_${isTreeMapVisible && isKWhMode ? 'kWh' : 'kW'}.csv`;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
     }
 
     function exportPNG() {
-  const canvases = [];
-  if (chartInstance) {
-    canvases.push({ canvas: chartInstance.canvas, name: 'power_chart' });
-  }
-  if (isTotalChartVisible && totalChartInstance) {
-    canvases.push({ canvas: totalChartInstance.canvas, name: 'total_power_chart' });
-  }
+      const canvases = [];
+      if (chartInstance) {
+        canvases.push({ canvas: chartInstance.canvas, name: `power_chart_kW` });
+      }
+      if (isTotalChartVisible && totalChartInstance) {
+        canvases.push({ canvas: totalChartInstance.canvas, name: `total_power_chart_kW` });
+      }
+      if (isTreeMapVisible && treeMapInstance) {
+        canvases.push({ canvas: treeMapInstance.canvas, name: `allocation_tree_map_${isKWhMode ? 'kWh' : 'kW'}` });
+      }
 
-  if (canvases.length === 0) {
-    showErrorModal('No chart available to export.');
-    return;
-  }
+      if (canvases.length === 0) {
+        showErrorModal('No chart available to export.');
+        return;
+      }
 
-  // อัตราส่วนการขยาย (เช่น 2x resolution)
-  const scale = 2;
+      const scale = 2;
 
-  canvases.forEach(item => {
-    // สร้าง canvas ใหม่ขนาดใหญ่ขึ้น
-    const tempCanvas = document.createElement('canvas');
-    const originalWidth = item.canvas.width;
-    const originalHeight = item.canvas.height;
+      canvases.forEach(item => {
+        const tempCanvas = document.createElement('canvas');
+        const originalWidth = item.canvas.width;
+        const originalHeight = item.canvas.height;
 
-    tempCanvas.width = originalWidth * scale;
-    tempCanvas.height = originalHeight * scale;
+        tempCanvas.width = originalWidth * scale;
+        tempCanvas.height = originalHeight * scale;
 
-    const tempCtx = tempCanvas.getContext('2d');
+        const tempCtx = tempCanvas.getContext('2d');
+        tempCtx.setTransform(scale, 0, 0, scale, 0, 0);
+        tempCtx.fillStyle = 'white';
+        tempCtx.fillRect(0, 0, originalWidth, originalHeight);
+        tempCtx.drawImage(item.canvas, 0, 0);
+        tempCtx.setTransform(1, 0, 0, 1, 0, 0);
 
-    // ตั้งค่าคุณภาพสูง
-    tempCtx.setTransform(scale, 0, 0, scale, 0, 0);
-    tempCtx.fillStyle = 'white';
-    tempCtx.fillRect(0, 0, originalWidth, originalHeight);
-
-    // วาดภาพจาก canvas เดิม
-    tempCtx.drawImage(item.canvas, 0, 0);
-
-    // รีเซ็ต transform
-    tempCtx.setTransform(1, 0, 0, 1, 0, 0);
-
-    // สร้างลิงก์และดาวน์โหลด
-    const link = document.createElement('a');
-    link.download = `${item.name}_${new Date().toISOString().split('T')[0]}.png`;
-    link.href = tempCanvas.toDataURL('image/png', 1.0); // คุณภาพ 100%
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-  });
-}
+        const link = document.createElement('a');
+        link.download = `${item.name}_${new Date().toISOString().split('T')[0]}.png`;
+        link.href = tempCanvas.toDataURL('image/png', 1.0);
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+      });
+    }
 
     function startAutoRefresh() {
       if (refreshInterval) clearInterval(refreshInterval);
@@ -1622,7 +1793,6 @@ Timestamp,BD1_DB1_BD6,BD1_DB2_UTILITIES,BD1_DB4_COATING
         showErrorModal(`Initial data load failed: ${error.message}`);
       });
 
-      // Search functionality for meters
       document.getElementById('meterSearch').addEventListener('input', function(e) {
         const term = e.target.value.toLowerCase();
         document.querySelectorAll('.filter-item').forEach(item => {
