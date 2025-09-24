@@ -16,7 +16,7 @@
   <script src="https://cdn.jsdelivr.net/npm/chart.js" defer crossorigin></script>
 
   <!-- Load chartjs-chart-treemap -->
-  <script src="https://cdn.jsdelivr.net/npm/chartjs-chart-treemap@2.3.0" defer crossorigin></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-chart-treemap@3.1.0" defer crossorigin></script>
 
   <style>
     * {
@@ -827,12 +827,20 @@
     let isTreeMapVisible = false;
     let isKWhMode = false;
     const colors = [
-      '#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FECA57',
+      '#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#5791fe',
       '#FF9FF3', '#54A0FF', '#5F27CD', '#00D2D3', '#FF9F43',
-      '#EE5A12', '#0984e3', '#6C5CE7', '#A29BFE', '#FD79A8'
+      '#EE5A12', '#0984e3', '#6C5CE7', '#A29BFE', '#FD79A8',
+      '#E63946', '#1D3557', '#457B9D', '#A8DADC', '#F1FAEE',
+      '#2A9D8F', '#E9C46A', '#F4A261', '#E76F51', '#264653',
+      '#D62828', '#8ECAE4', '#023047', '#FFB703', '#219EBC',
+      '#FB8500', '#8338EC', '#3A86FF', '#FF006E', '#1145a8',
+      '#6A4C93', '#FFAFCC', '#BDE0FE', '#A2D2FF', '#CDB4DB',
+      '#FFC8DD', '#FFAFCC', '#BDE0FE', '#A2D2FF', '#CDB4DB',
+      '#FFC8DD', '#FFAFCC', '#BDE0FE', '#A2D2FF', '#CDB4DB'
     ];
     const bd1Meters = ['BD1_DB1_BD6','BD1_DB2_UTILITIES','BD1_DB4_COATING','BD1_SDB2_1_PACKING','BD1_SDB_2-3','BD1_SDB_4-1','BD1_DB11_AHU_DURALUX','BD1_DB3_COATING','BD1_DB9_IPP','BD1_BD2_BD3_HP_Cleaning','BD1_BD4_BD5_QC','BD1_BD4_MOULD_PROD','BD1_BD5_MOULD_PROD','BD1_BD6_MOULD_PROD','BD1_DB14_PLASTIC','BD1_DB15_PLASTIC','BD1_DB5_RX_MPF','BD1_DB6_PLASTIC','BD1_DB7_PLASTIC','BD1_RX_Surfacing_MPF','BD1_SCHNEIDER_1_4','BD1_SCHNEIDER_5_8','BD1_DB8_AHU'];
     const bd2Meters = ['BD2_DB3_UTILITIES','BD2_DB4_UTILITIES','BD2_DB2_Ring','BD2_DB14_LENS','BD2_DB9_MONOMER','BD2_DB6_Tinting','BD2_SDB3_Mix_F2B2','BD2_DB10_PLASTIC','BD2_DB12_RX','BD2_DB13_RX_EMERGENCY','BD2_DB16_PLP','BD2_DB7_2_NDR_2','BD2_DB7_PLASTIC','BD2_DB8_PLASTIC','BD2_DB15_AHU','BD2_DB1_Ring','BD2_DB5_AHU'];
+    const excludedMeters = ['BD1_SCHNEIDER_1_4', 'BD1_SCHNEIDER_5_8', 'BD1_RX_Surfacing_MPF'];
 
     const fallbackData = `
 Timestamp,BD1_DB1_BD6,BD1_DB2_UTILITIES,BD1_DB4_COATING
@@ -1513,28 +1521,54 @@ Timestamp,BD1_DB1_BD6,BD1_DB2_UTILITIES,BD1_DB4_COATING
       destroyChart(treeMapInstance, 'TreeMap');
       const latestData = filteredData?.data[filteredData.data.length - 1];
       const kWhData = calculateKWh(filteredData);
-      const treeData = [];
+      const tempData = [];
+      let total = 0;
 
       const checkboxes = document.querySelectorAll('input[type="checkbox"]');
       checkboxes.forEach((cb, index) => {
-        if (cb.checked) {
-          const label = allDatasets[index].label;
+        const label = allDatasets[index].label;
+        if (cb.checked && !excludedMeters.includes(label)) {
           const value = isKWhMode ? parseFloat(kWhData[index]) : parseFloat(latestData[index + 1]) || 0;
           const color = allDatasets[index].borderColor;
           if (value > 0) {
-            treeData.push({
-              name: label,
-              value: value,
-              color: color
-            });
+            tempData.push({ label, value, color });
+            total += value;
           }
         }
       });
 
-      if (treeData.length === 0) {
+      if (total === 0) {
         console.warn('No valid data for Tree Map');
         return;
       }
+
+      const treeData = [];
+      let otherSum = 0;
+      tempData.forEach(item => {
+        const percent = (item.value / total) * 100;
+        if (percent < 1) {
+          otherSum += item.value;
+        } else {
+          treeData.push({
+            name: item.label,
+            value: item.value,
+            color: item.color,
+            percent: percent.toFixed(1)
+          });
+        }
+      });
+
+      if (otherSum > 0) {
+        const otherPercent = (otherSum / total) * 100;
+        treeData.push({
+          name: 'Other',
+          value: otherSum,
+          color: '#999999',
+          percent: otherPercent.toFixed(1)
+        });
+      }
+
+      const unit = isKWhMode ? ' kWh' : ' kW';
 
       treeMapInstance = new Chart(ctx, {
         type: 'treemap',
@@ -1555,11 +1589,11 @@ Timestamp,BD1_DB1_BD6,BD1_DB2_UTILITIES,BD1_DB4_COATING
               align: 'center',
               position: 'center',
               font: { size: 12, weight: 'bold' },
-              color: '#333',
+              color: '#fff',
               formatter: function(ctx) {
                 if (ctx.type !== 'data') return;
                 const data = ctx.raw._data;
-                return data.name + '\n' + data.value.toFixed(1) + (isKWhMode ? ' kWh' : ' kW');
+                return [data.name, data.value.toFixed(1) + unit, data.percent + '%'];
               }
             }
           }]
@@ -1574,7 +1608,8 @@ Timestamp,BD1_DB1_BD6,BD1_DB2_UTILITIES,BD1_DB4_COATING
                   return ctx[0].raw._data.name;
                 },
                 label: function(ctx) {
-                  return ctx.raw._data.value.toFixed(1) + (isKWhMode ? ' kWh' : ' kW');
+                  const data = ctx.raw._data;
+                  return data.value.toFixed(1) + unit + ' (' + data.percent + '%)';
                 }
               }
             }
