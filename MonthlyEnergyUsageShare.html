@@ -155,8 +155,14 @@
       backdrop-filter: blur(10px);
       border-bottom: 1px solid rgba(0, 0, 0, 0.1);
     }
-    .control-group {
+    .date-controls {
+      display: flex;
+      gap: 20px;
       margin-bottom: 20px;
+    }
+    .control-group {
+      flex: 1;
+      margin-bottom: 0;
     }
     .control-group label {
       display: block;
@@ -445,6 +451,10 @@
       .compare-chart-wrapper {
         height: 350px;
       }
+      .date-controls {
+        flex-direction: column;
+        gap: 0;
+      }
     }
     @media (max-width: 768px) {
       .topbar {
@@ -490,6 +500,10 @@
       }
       .modal-body {
         padding: 20px;
+      }
+      .date-controls {
+        flex-direction: column;
+        gap: 0;
       }
     }
     @media (max-width: 480px) {
@@ -615,13 +629,16 @@
       <p>Monthly Energy Usage Share</p>
     </div>
     <div class="controls">
-      <div class="control-group">
-        <label><i class="fas fa-calendar-alt"></i> Select Year:</label>
-        <select id="yearSelect" aria-label="Select year for tree map"></select>
-      </div>
-      <div class="control-group">
-        <label>Select Month:</label>
-        <select id="monthSelect" aria-label="Select month for tree map"></select>
+      <div class="date-controls">
+<div class="control-group">
+          <label>Select Month:</label>
+          <select id="monthSelect" aria-label="Select month for tree map"></select>
+        </div>
+        <div class="control-group">
+          <label><i class="fas fa-calendar-alt"></i> Select Year:</label>
+          <select id="yearSelect" aria-label="Select year for tree map"></select>
+        </div>
+        
       </div>
       <div class="action-buttons">
         <button class="btn btn-success" onclick="exportCSV()" aria-label="Export selected data to CSV file">
@@ -969,7 +986,7 @@ Timestamp,BD1_DB1_BD6,BD1_DB2_UTILITIES,BD1_DB4_COATING
       availableMonths.forEach(m => {
         const option = document.createElement('option');
         option.value = m;
-        option.textContent = `Month ${m}`;
+        option.textContent = m.toString();
         monthSelect.appendChild(option);
       });
       // Set to the latest month for this year initially
@@ -1013,7 +1030,7 @@ Timestamp,BD1_DB1_BD6,BD1_DB2_UTILITIES,BD1_DB4_COATING
       years.forEach(year => {
         const option = document.createElement('option');
         option.value = year;
-        option.textContent = `Year ${year}`;
+        option.textContent = year;
         yearSelect.appendChild(option);
       });
 
@@ -1514,7 +1531,7 @@ Timestamp,BD1_DB1_BD6,BD1_DB2_UTILITIES,BD1_DB4_COATING
           scales: {
             y: {
               beginAtZero: true,
-              ticks: { callback: function(value) { return value + ' kWh'; } }
+              ticks: { callback: function(value) { return formatNumber(value) + ' kWh'; } }
             }
           },
           plugins: {
@@ -1522,7 +1539,7 @@ Timestamp,BD1_DB1_BD6,BD1_DB2_UTILITIES,BD1_DB4_COATING
             tooltip: {
               callbacks: {
                 label: function(ctx) {
-                  return ctx.dataset.label + ': ' + ctx.parsed.y.toFixed(1) + ' kWh';
+                  return ctx.dataset.label + ': ' + formatNumber(ctx.parsed.y) + ' kWh';
                 }
               }
             }
@@ -1538,15 +1555,15 @@ Timestamp,BD1_DB1_BD6,BD1_DB2_UTILITIES,BD1_DB4_COATING
 
       document.getElementById('statsGrid').innerHTML = `
         <div class="stat-card">
-          <div class="stat-value">${total1.toFixed(1)} kWh</div>
+          <div class="stat-value">${formatNumber(total1)} kWh</div>
           <div class="stat-label">Total ${month1Label}</div>
         </div>
         <div class="stat-card">
-          <div class="stat-value">${total2.toFixed(1)} kWh</div>
+          <div class="stat-value">${formatNumber(total2)} kWh</div>
           <div class="stat-label">Total ${month2Label}</div>
         </div>
         <div class="stat-card">
-          <div class="stat-value ${diffClass}">${difference.toFixed(1)} kWh</div>
+          <div class="stat-value ${diffClass}">${formatNumber(difference)} kWh</div>
           <div class="stat-label">Difference</div>
         </div>
         <div class="stat-card">
