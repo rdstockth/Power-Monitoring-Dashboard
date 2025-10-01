@@ -1,0 +1,1597 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Energy Monitoring Dashboard</title>
+
+  <!-- Font Awesome with lazy load -->
+  <link rel="preload" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.1/css/all.min.css" as="style" onload="this.onload=null;this.rel='stylesheet'">
+  <noscript><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.1/css/all.min.css"></noscript>
+
+  <!-- Preload Chart.js -->
+  <link rel="preload" href="https://cdn.jsdelivr.net/npm/chart.js" as="script" crossorigin>
+
+  <!-- Load Chart.js deferred -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js" defer crossorigin></script>
+
+  <!-- Load chartjs-chart-treemap -->
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-chart-treemap@3.1.0" defer crossorigin></script>
+
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: linear-gradient(105deg, #66FF99 0%, #FFFF99 100%);
+      min-height: 100vh;
+      padding: 20px;
+      -webkit-user-select: none;
+      -moz-user-select: none;
+      -ms-user-select: none;
+      user-select: none;
+    }
+    .container {
+      max-width: 100%;
+      margin-top: 60px;
+      background: rgba(255, 255, 255, 0.1);
+      backdrop-filter: blur(20px);
+      border-radius: 30px;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      box-shadow: 0 30px 60px rgba(0, 0, 0, 0.15);
+      overflow: hidden;
+      position: relative;
+    }
+    .container::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 2px;
+      background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.8), transparent);
+      animation: shimmer 2s infinite;
+    }
+    @keyframes shimmer {
+      0% { transform: translateX(-100%); }
+      100% { transform: translateX(100%); }
+    }
+    .header {
+      background: linear-gradient(135deg, #256eff 0%, #6fd0ff 100%);
+      padding: 40px 30px 20px;
+      text-align: center;
+      color: white;
+      position: relative;
+      overflow: hidden;
+    }
+    .header::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="grid" width="10" height="10" patternUnits="userSpaceOnUse"><path d="M 10 0 L 0 0 0 10" fill="none" stroke="rgba(255,255,255,0.1)" stroke-width="0.5"/></pattern></defs><rect width="100" height="100" fill="url(%23grid)"/></svg>');
+      opacity: 0.4;
+      box-shadow: inset 0 0 10px rgba(255, 255, 255, 0.2);
+    }
+    .header h1 {
+      font-size: 3em;
+      margin-bottom: 15px;
+      text-shadow: 2px 2px 4px rgba(0, 0, 0, 0);
+      position: relative;
+      z-index: 1;
+      background: linear-gradient(45deg, #ffd700, #ffcc00);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .header p {
+      font-size: 1.3em;
+      opacity: 0.95;
+      position: relative;
+      z-index: 1;
+      font-weight: 400;
+      letter-spacing: 0.8px;
+    }
+    .topbar {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 60px;
+      background: linear-gradient(90deg, #256eff 0%, #6fd0ff 100%);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+      z-index: 9999;
+      transition: all 0.3s ease;
+    }
+    .topbar-items {
+      display: flex;
+      gap: 20px;
+    }
+    .topbar-item {
+      padding: 10px 20px;
+      display: flex;
+      align-items: center;
+      color: white;
+      text-decoration: none;
+      font-size: 16px;
+      font-weight: 500;
+      transition: all 0.3s ease;
+      position: relative;
+      border-radius: 25px;
+    }
+    .topbar-item i {
+      font-size: 20px;
+      margin-right: 8px;
+    }
+    .topbar-item:hover {
+      background: rgba(255, 255, 255, 0.2);
+      transform: translateY(-2px);
+    }
+    .topbar-item::before {
+      content: '';
+      position: absolute;
+      bottom: 0;
+      left: 50%;
+      width: 0;
+      height: 2px;
+      background: linear-gradient(45deg, #ffd700, #ffcc00);
+      transition: all 0.3s ease;
+      transform: translateX(-50%);
+    }
+    .topbar-item:hover::before {
+      width: 80%;
+    }
+    .controls {
+      padding: 20px 30px;
+      background: rgba(255, 255, 255, 0.95);
+      backdrop-filter: blur(10px);
+      border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+    }
+    .control-group {
+      margin-bottom: 20px;
+    }
+    .control-group label {
+      display: block;
+      margin-bottom: 15px;
+      font-weight: 700;
+      color: #495057;
+      font-size: 1.1em;
+      letter-spacing: 0.5px;
+    }
+    #yearSelect, #monthSelect {
+      width: 100%;
+      padding: 10px 15px;
+      border: 2px solid #e9ecef;
+      border-radius: 8px;
+      font-size: 14px;
+      margin-bottom: 15px;
+      transition: border-color 0.3s ease;
+    }
+    #yearSelect:focus, #monthSelect:focus {
+      outline: none;
+      border-color: #256eff;
+      box-shadow: 0 0 0 3px rgba(37, 111, 255, 0.1);
+    }
+    .action-buttons {
+      display: flex;
+      gap: 20px;
+      justify-content: center;
+      flex-wrap: wrap;
+      margin-top: 20px;
+    }
+    .btn {
+      padding: 15px 30px;
+      border: none;
+      border-radius: 30px;
+      font-size: 16px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      position: relative;
+      overflow: hidden;
+      min-width: 160px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+    .btn::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: -100%;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+      transition: left 0.5s ease;
+    }
+    .btn:hover::before {
+      left: 100%;
+    }
+    .btn-success {
+      background: linear-gradient(135deg, #4caf50, #8bc34a);
+      color: white;
+      box-shadow: 0 5px 20px rgba(76, 175, 80, 0.3);
+    }
+    .btn-info {
+      background: linear-gradient(135deg, #6633FF, #66CCFF);
+      color: white;
+      box-shadow: 0 5px 20px rgba(33, 150, 123, 0.3);
+    }
+    .btn-warning {
+      background: linear-gradient(135deg, #FF9800, #F57C00);
+      color: white;
+      box-shadow: 0 5px 20px rgba(255, 152, 0, 0.3);
+    }
+    .btn-tree-map {
+      background: linear-gradient(135deg, #9b59b6, #d7bde2);
+      color: white;
+      box-shadow: 0 5px 20px rgba(155, 89, 182, 0.3);
+    }
+    .btn:hover, .btn-tree-map:hover, .btn-warning:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+    }
+    .btn:active, .btn-tree-map:active, .btn-warning:active {
+      transform: translateY(-1px);
+    }
+    .chart-container {
+      padding: 10px 20px;
+      background: linear-gradient(135deg, #fff 0%, #f8f9fa 100%);
+      position: relative;
+    }
+    .chart-header {
+      text-align: center;
+      margin-bottom: -15px;
+      padding: 10px 0;
+    }
+    .chart-title {
+      font-size: 1.8em;
+      font-weight: 700;
+      background: linear-gradient(45deg, #256eff, #6fd0ff);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      margin-bottom: 15px;
+    }
+    .chart-wrapper {
+      position: relative;
+      min-height: 650px;
+      background: linear-gradient(135deg, #fff 0%, #f8f9fa 100%);
+      border-radius: 20px;
+      padding: 15px;
+      box-shadow: inset 0 5px 20px rgba(0, 0, 0, 0.05);
+      border: 1px solid rgba(37, 111, 255, 0.1);
+      transition: height 0.3s ease;
+    }
+    #mainTreeMapWrapper, #otherTreeMapWrapper {
+      min-height: 550px;
+      margin-top: 5px;
+      transition: height 0.3s ease;
+    }
+    .error-modal {
+      position: fixed;
+      top: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: #f44336;
+      color: white;
+      padding: 15px;
+      border-radius: 8px;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+      z-index: 10000;
+      display: flex;
+      gap: 10px;
+      align-items: center;
+    }
+    .error-modal button {
+      padding: 8px 16px;
+      border: none;
+      border-radius: 4px;
+      background: #fff;
+      color: #f44336;
+      cursor: pointer;
+      font-weight: 600;
+    }
+    /* Modal Styles */
+    .modal {
+      display: none;
+      position: fixed;
+      z-index: 10001;
+      left: 0;
+      top: 0;
+      width: 100%;
+      height: 100%;
+      overflow: auto;
+      background-color: rgba(0,0,0,0.5);
+      animation: fadeIn 0.3s ease;
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+    .modal-content {
+      background-color: #fefefe;
+      margin: 5% auto;
+      padding: 0;
+      border: none;
+      border-radius: 20px;
+      width: 90%;
+      max-width: 1200px;
+      max-height: 90vh;
+      overflow-y: auto;
+      box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+      position: relative;
+      animation: slideIn 0.3s ease;
+    }
+    @keyframes slideIn {
+      from { transform: translateY(-50px); opacity: 0; }
+      to { transform: translateY(0); opacity: 1; }
+    }
+    .modal-header {
+      background: linear-gradient(135deg, #256eff 0%, #6fd0ff 100%);
+      color: white;
+      padding: 20px 30px;
+      border-radius: 20px 20px 0 0;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .modal-header h2 {
+      margin: 0;
+      font-size: 1.8em;
+    }
+    .close {
+      color: white;
+      font-size: 28px;
+      font-weight: bold;
+      cursor: pointer;
+      padding: 0 10px;
+      border-radius: 50%;
+      transition: background 0.3s ease;
+    }
+    .close:hover {
+      background: rgba(255,255,255,0.2);
+    }
+    .modal-body {
+      padding: 30px;
+    }
+    .compare-controls {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 20px;
+      margin-bottom: 20px;
+    }
+    .control-item {
+      display: flex;
+      flex-direction: column;
+    }
+    .control-item label {
+      font-weight: 700;
+      margin-bottom: 8px;
+      color: #495057;
+    }
+    .control-item select, .control-item button {
+      padding: 12px;
+      border: 2px solid #e9ecef;
+      border-radius: 8px;
+      font-size: 14px;
+    }
+    .control-item button {
+      background: linear-gradient(135deg, #4caf50, #8bc34a);
+      color: white;
+      border: none;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      font-weight: 700;
+    }
+    .control-item button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 5px 15px rgba(76, 175, 80, 0.3);
+    }
+    .compare-chart-wrapper {
+      position: relative;
+      height: 400px;
+      margin-bottom: 30px;
+      background: #f8f9fa;
+      border-radius: 15px;
+      padding: 20px;
+    }
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 20px;
+    }
+    .stat-card {
+      background: white;
+      padding: 20px;
+      border-radius: 15px;
+      text-align: center;
+      box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+      transition: transform 0.3s ease;
+    }
+    .stat-card:hover {
+      transform: translateY(-5px);
+    }
+    .stat-value {
+      font-size: 2em;
+      font-weight: 700;
+      margin-bottom: 5px;
+    }
+    .stat-label {
+      color: #6c757d;
+      font-size: 0.9em;
+    }
+    .positive { color: #28a745; }
+    .negative { color: #dc3545; }
+    @media (max-width: 1012px) {
+      .chart-wrapper, #mainTreeMapWrapper, #otherTreeMapWrapper {
+        min-height: 420px;
+        padding: 20px;
+      }
+      .compare-controls {
+        grid-template-columns: 1fr;
+      }
+      .compare-chart-wrapper {
+        height: 350px;
+      }
+    }
+    @media (max-width: 768px) {
+      .topbar {
+        height: 50px;
+      }
+      .topbar-items {
+        gap: 10px;
+      }
+      .topbar-item {
+        padding: 8px 15px;
+        font-size: 14px;
+      }
+      .topbar-item i {
+        font-size: 16px;
+        margin-right: 6px;
+      }
+      .container {
+        margin-top: 50px;
+      }
+      .chart-wrapper, #mainTreeMapWrapper, #otherTreeMapWrapper {
+        min-height: 400px;
+        padding: 15px;
+      }
+      .chart-title {
+        font-size: 1.4em;
+      }
+      .action-buttons {
+        flex-direction: column;
+        align-items: stretch;
+      }
+      .action-buttons .btn,
+      .action-buttons .btn-tree-map,
+      .action-buttons .btn-warning {
+        flex: 1;
+        min-width: 100%;
+        max-width: 350px;
+        margin: 5px auto;
+        text-align: center;
+      }
+      .modal-content {
+        width: 95%;
+        margin: 2% auto;
+      }
+      .modal-body {
+        padding: 20px;
+      }
+    }
+    @media (max-width: 480px) {
+      .chart-title {
+        font-size: 1.2em;
+      }
+      .chart-wrapper, #mainTreeMapWrapper, #otherTreeMapWrapper {
+        min-height: 350px;
+      }
+      .compare-chart-wrapper {
+        height: 300px;
+      }
+    }
+    @media (max-width: 430px) {
+      .header h1 {
+        font-size: 2.5em;
+      }
+      .header p {
+        font-size: 1.1em;
+      }
+      .btn {
+        padding: 12px 25px;
+        font-size: 14px;
+      }
+      .chart-title {
+        font-size: 1.1em;
+      }
+      .chart-wrapper, #mainTreeMapWrapper, #otherTreeMapWrapper {
+        min-height: 320px;
+      }
+    }
+    @media (min-width: 1920px) {
+      body {
+        padding: 30px;
+      }
+      .container {
+        max-width: calc(100% - 60px);
+        margin: 70px auto 30px;
+      }
+      .topbar {
+        height: 70px;
+      }
+      .topbar-item i {
+        font-size: 24px;
+        margin-right: 12px;
+      }
+      .topbar-item {
+        font-size: 18px;
+        padding: 15px 25px;
+      }
+      .header h1 {
+        font-size: 3.5em;
+      }
+      .header p {
+        font-size: 1.5em;
+      }
+      .chart-wrapper, #mainTreeMapWrapper, #otherTreeMapWrapper {
+        min-height: 550px;
+        padding: 30px;
+      }
+      .chart-title {
+        font-size: 2.2em;
+      }
+      .compare-chart-wrapper {
+        height: 500px;
+      }
+    }
+    @media (min-width: 2560px) {
+      body {
+        font-size: 18px;
+        padding: 40px;
+      }
+      .container {
+        max-width: 2200px;
+        margin: 80px auto 40px;
+      }
+      .topbar {
+        height: 80px;
+      }
+      .topbar-item {
+        font-size: 20px;
+        padding: 18px 30px;
+      }
+      .header h1 {
+        font-size: 4em;
+      }
+      .header p {
+        font-size: 1.8em;
+      }
+      .chart-wrapper, #mainTreeMapWrapper, #otherTreeMapWrapper {
+        min-height: 600px;
+      }
+      .chart-title {
+        font-size: 2.5em;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="topbar">
+    <div class="topbar-items">
+      <a href="index.html" class="topbar-item" aria-label="Go to Home page">
+        <i class="fas fa-home"></i>
+        <span>Home</span>
+      </a>
+      <a href="MainIncoming.html" class="topbar-item" aria-label="Go to Main Incoming page">
+        <i class="fas fa-network-wired"></i>
+        <span>Main Incoming</span>
+      </a>
+      <a href="BuildingPowerAnalytics.html" class="topbar-item" aria-label="Go to Building Power Analytics page">
+        <i class="fas fa-bolt"></i> 
+        <span>Building Power</span>
+      </a>
+      <a href="MonthlyEnergyUsageShare.html" class="topbar-item" aria-label="Go to Monthly Energy Usage Share page">
+        <i class="fas fa-chart-pie"></i>
+        <span>Monthly Energy Usage Share</span>
+      </a>
+    </div>
+  </div>
+  <div class="container">
+    <div class="header">
+      <h1><i class="fas fa-bolt"></i> Energy Monitoring Dashboard</h1>
+      <p>Monthly Energy Usage Share</p>
+    </div>
+    <div class="controls">
+      <div class="control-group">
+        <label><i class="fas fa-calendar-alt"></i> Select Year:</label>
+        <select id="yearSelect" aria-label="Select year for tree map"></select>
+      </div>
+      <div class="control-group">
+        <label>Select Month:</label>
+        <select id="monthSelect" aria-label="Select month for tree map"></select>
+      </div>
+      <div class="action-buttons">
+        <button class="btn btn-success" onclick="exportCSV()" aria-label="Export selected data to CSV file">
+          <i class="fas fa-file-csv"></i> Export CSV
+        </button>
+        <button class="btn btn-info" onclick="exportPNG()" aria-label="Export charts to PNG images">
+          <i class="fas fa-image"></i> Export Image
+        </button>
+        <button class="btn btn-warning" onclick="openCompareModal()" aria-label="Compare months energy usage">
+          <i class="fas fa-chart-line"></i> Compare Months
+        </button>
+      </div>
+    </div>
+    <div class="chart-container">
+      <div class="chart-header" id="mainTreeMapHeader">
+        <div class="chart-title"><i class="fas fa-sitemap"></i> Main Transformers Monthly Share</div>
+        <div id="mainWarning" style="color: red; text-align: center;"></div>
+      </div>
+      <div class="chart-wrapper" id="mainTreeMapWrapper">
+        <canvas id="mainTreeMapChart"></canvas>
+      </div>
+      <div class="chart-header" id="otherTreeMapHeader">
+        <div class="chart-title"><i class="fas fa-sitemap"></i> Cost Center Monthly Share</div>
+        <div id="otherWarning" style="color: red; text-align: center;"></div>
+      </div>
+      <div class="chart-wrapper" id="otherTreeMapWrapper">
+        <canvas id="otherTreeMapChart"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <!-- Compare Modal -->
+  <div id="compareModal" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2><i class="fas fa-chart-bar"></i> Compare Monthly Energy Usage</h2>
+        <span class="close" onclick="closeCompareModal()">&times;</span>
+      </div>
+      <div class="modal-body">
+        <div class="compare-controls">
+          <div class="control-item">
+            <label>Month 1:</label>
+            <select id="month1Select"></select>
+          </div>
+          <div class="control-item">
+            <label>Month 2:</label>
+            <select id="month2Select"></select>
+          </div>
+          <div class="control-item">
+            <label>Meter Group:</label>
+            <select id="groupSelect">
+              <option value="main">Main Transformers</option>
+              <option value="cost">Cost Center Group</option>
+            </select>
+          </div>
+        </div>
+        <button class="btn btn-success" onclick="updateCompareChart()" style="width: 100%; margin-bottom: 20px;">Update Chart</button>
+        <div class="compare-chart-wrapper">
+          <canvas id="compareChart"></canvas>
+        </div>
+        <div class="stats-grid" id="statsGrid"></div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let mainTreeMapInstance = null;
+    let otherTreeMapInstance = null;
+    let compareChartInstance = null;
+    let rawData = null;
+    let monthlyData = null;
+    let allDatasets = [];
+    let filteredData = null;
+    let refreshInterval = null;
+    const currentDate = new Date(2025, 9, 1); // October 1, 2025
+    const colors = [
+  '#FF4757', '#FF6B35', '#F8B500', '#18b56e', '#8BC34A',
+'#1ABC9C', '#00CEC9', '#3498DB', '#74B9FF', '#3867D6',
+'#5352ED', '#9B59B6', '#E84393', '#FD79A8', '#FF5722',
+'#E67E22', '#795548', '#607D8B', '#4834D4', '#00B894',
+'#0984E3', '#6C5CE7', '#FF3742', '#FFB142', '#FDCB6E',
+'#81ECEC', '#686DE0', '#A29BFE', '#C0392B', '#D35400',
+'#F39C12', '#FF9800', '#FFC107', '#55A3FF', '#8B80F9',
+'#FF7675', '#E17055', '#FF6348', '#FD63A4', '#3742FA',
+'#E74C3C', '#FF8C42', '#FF3838', '#FF6B6B', '#FFA801'
+    ];
+    const mainMeters = ['BD1_TR1_MAIN', 'BD1_TR2_MAIN', 'BD1_TR3_MAIN', 'BD2_TR1_MAIN', 'BD2_TR2_MAIN', 'BD2_TR3_MAIN', 'BD3_TR_Main'];
+    const excludedMeters = [
+  'BD1_SDB2_1_PACKING',
+  'BD1_SDB_2-3',
+  'BD1_SDB_4-1',
+  'BD1_BD2_BD3_HP_Cleaning',
+  'BD1_BD4_BD5_QC',
+  'BD1_BD4_MOULD_PROD',
+  'BD1_BD5_MOULD_PROD',
+  'BD1_BD6_MOULD_PROD',
+  'BD1_RX_Surfacing_MPF',
+  'BD1_SCHNEIDER_1_4',
+  'BD1_SCHNEIDER_5_8',
+  'BD2_SDB3_Mix_F2B2'
+];
+    const meterToCost = {'BD1_TR1_MAIN': '0', 'BD1_TR2_MAIN': '0', 'BD1_TR3_MAIN': '0', 'BD1_WATER_PUMPS': '', 'BD1_DB8_AHU': '', 'BD1_CHILLER_1': '', 'BD1_CHILLER_2': '', 'BD1_BACKUP_CHILLER_3': '', 'BD1_Modular_Chiller_No-1': '11111', 'BD1_Modular_Chiller_No-2': '11111', 'BD1_DB5_RX_MPF': '', 'BD1_SCHNEIDER_1_4': '41102', 'BD1_SCHNEIDER_5_8': '41102', 'BD1_RX_Surfacing_MPF': '41103', 'BD1_DB12_TINTING': '11450', 'BD1_DB13_PCM_HI': '11460', 'BD1_DB2_UTILITIES': '', 'BD1_DB6_PLASTIC': '', 'BD1_ELMA_L3': '31114', 'BD1_ELMA_LB': '31114', 'BD1_BD2_BD3_HP_Cleaning': '31114', 'BD1_BD4_BD5_QC': '31114', 'BD1_Dust_B1': '31114', 'BD1_DB3_COATING': '', 'BD1_CR22_MC': '11440', 'BD1_CD2000_MC': '11440', 'BD1_DB3_3_CD2000': '11440', 'BD1_Syrus_02': '11470', 'BD1_Solitair_02': '11480', 'BD1_Syrus_03': '11470', 'BD1_Solitair_01': '11480', 'BD1_Oven_3F4': '11440', 'BD1_Oven_3F5': '11440', 'BD1_DB4_COATING': '', 'BD1_EMULSION_RX': '41102', 'BD1_ULTRA_CLEAN_MC': '11480', 'BD1_DB11_AHU_DURALUX': '', 'BD1_DB14_PLASTIC': '31125', 'BD1_DB15_PLASTIC': '31126', 'BD1_HIGH_PRESS_URACA': '31114', 'BD1_DB10_SANDBLASTING': '11480', 'BD1_COMP_AIR_GA90_1': '', 'BD1_COMP_AIR_GA90_2': '', 'BD1_DB1_BD6': '', 'BD1_NDR3_SERVER_RM3': '11107', 'BD1_SDB_4-1': '41104', 'BD1_VRF_F1': '', 'BD1_WASTE_WATER_PLANT': '', 'BD1_DB9_IPP': '11103', 'BD1_DB7_PLASTIC': '', 'BD1_Poly_47_50': '31125', 'BD1_Dismantle_L2': '31114', 'BD1_SINGLE_TANK_NO-1': '31114', 'BD1_DB16_SPARE': '31126', 'BD1_New_RO': '', 'BD1_Temp_11_QC': '31125', 'BD1_Temp_12_QC': '31125', 'BD1_Solitair_05': '11480', 'BD1_Solitair_04': '11480', 'BD1_ELMA_COATING': '11480', 'BD1_Solitair_03': '11480', 'BD1_Syrus_04': '11470', 'BD1_Syrus_01': '11470', 'BD1_BD6_MOULD_PROD': '31202', 'BD1_BD5_MOULD_PROD': '31202', 'BD1_BD4_MOULD_PROD': '31202', 'BD1_SANDBLAST_WET': '11480', 'BD1_SANDBLAST_DRY': '11480', 'BD1_COLD WARM_WATER_PUMPS': '', 'BD1_WATER_HEATERS': '', 'BD1_ULTRA_CLEAN_SAND': '11480', 'BD1_SDB2.1_PACKING': '41301', 'BD1_SDB_2-3': '41301', 'BD1_Syrus_05': '11470', 'BD1_Pump_PCW_ No_1': '', 'BD1_Pump_PCW_ No_2': '', 'BD2_TR1_MAIN': '0', 'BD2_TR2_MAIN': '0', 'BD2_TR3_MAIN': '0', 'BD2_DB5_AHU': '', 'BD2_CHILLER_1': '', 'BD2_WATER_PUMPS': '', 'BD2_CHILLER_2': '', 'BD2_CHILLER_3_BACKUP': '', 'BD2_MCCB_800A': '', 'BD2_DB15_AHU': '', 'BD2_DB16_PLP': '31126', 'BD2_DB1_Ring': '', 'BD2_DB6_Tinting': '51450', 'BD2_Dust_PLP_B2': '31126', 'BD2_Arburg_MC1': '31103', 'BD2_Emulsion_RX_B2': '51101', 'BD2_DB_HVAC_F2': '', 'BD2_DB2_Ring': '51301', 'BD2_DB8_PLASTIC': '31126', 'BD2_BD5_HP_Clean': '31126', 'BD2_ELMA_L6': '31126', 'BD2_ELMA_P_Clean_L1': '31126', 'BD2_DB4_UTILITIES': '', 'BD2_UCM96': '51480', 'BD2_ILSUNG_1': '51440', 'BD2_ILSUNG_2': '51440', 'BD2_SDB4_1_PLP_2_107': '31126', 'BD2_RO_B2': '', 'BD2_URACA': '31126', 'BD2_DB12_RX': '', 'BD2_RX_BRA': '51101', 'BD2_RX_L1': '51101', 'BD2_RX_L2': '51101', 'BD2_RX_L3': '51101', 'BD2_RX_L4': '51101', 'BD2_DB10_PLASTIC': '31126', 'BD2_ELMA_Acid_L8': '31126', 'BD2_ELMA_Heat_L8': '31126', 'BD2_ELMA_P_Clean_L3': '31126', 'BD2_DB14_LENS': '', 'BD2_DB3_UTILITIES': '', 'BD2_SDB3_Mix_F2B2': '31122', 'BD2_GA90_VSD': '', 'BD2_DB7_PLASTIC': '31126', 'BD2_DB7_2_NDR_2': '11107', 'BD2_Temper_Oven_7-10': '31126', 'BD2_Temper_Oven_39-42': '31126', 'BD2_Dismantle_L4': '31126', 'BD2_DB7_1_Cast_B2': '31126', 'BD2_DB9_MONOMER': '11103', 'BD2_DB13_RX_EMERGENCY': '51101', 'BD2_Control_RX': '51101', 'BD2_SYRUS1': '51470', 'BD2_SYRUS2': '51470', 'BD2_SYRUS3': '51470', 'BD2_SYRUS4': '51470', 'BD2_SOLITAIRE1': '51480', 'BD2_SOLITAIRE2': '51480', 'BD2_SOLITAIRE3': '51480', 'BD2_SOLITAIRE4': '51480', 'BD2_SOLITAIRE5': '51480', 'BD2_SOLITAIRE6': '51480', 'BD2_DL_OVEN01': '51440', 'BD2_DL_OVEN02': '51440', 'BD3_TR_Main': '0', 'BD3_DB8_UF_Plant': '', 'BD3_DB9_Canteen': '11301', 'BD3_DB10_AIR_CONDITION': '', 'BD3_DB1_TRAINING_CENTER': '11108', 'BD3_DB2_MATERIAL': '', 'BD3_DB1_RTHS': '11301', 'BD3_SDB2_FINANCE_IT_HR': '11105', 'BD3_DB3_LOGISTIC_UF_PLANT': '11103', 'BD3_DB4_TS_WORKSHOP': '11202', 'BD3_DB5_TS_OFFICE_STORE': '11201'};
+    const meterToSection = {'BD1_TR1_MAIN': 'Facility', 'BD1_TR2_MAIN': 'Facility', 'BD1_TR3_MAIN': 'Facility', 'BD1_WATER_PUMPS': 'Facility', 'BD1_DB8_AHU': 'Facility', 'BD1_CHILLER_1': 'Facility', 'BD1_CHILLER_2': 'Facility', 'BD1_BACKUP_CHILLER_3': 'Facility', 'BD1_Modular_Chiller_No-1': 'Facility', 'BD1_Modular_Chiller_No-2': 'Facility', 'BD1_DB5_RX_MPF': 'MP', 'BD1_SCHNEIDER_1_4': 'RX B1', 'BD1_SCHNEIDER_5_8': 'RX B1', 'BD1_RX_Surfacing_MPF': 'RX B1', 'BD1_DB12_TINTING': 'LC B1', 'BD1_DB13_PCM_HI': 'LC B1', 'BD1_DB2_UTILITIES': 'Facility', 'BD1_DB6_PLASTIC': 'Facility', 'BD1_ELMA_L3': 'PLP', 'BD1_ELMA_LB': 'PLP', 'BD1_BD2_BD3_HP_Cleaning': 'PLP', 'BD1_BD4_BD5_QC': 'PLP', 'BD1_Dust_B1': 'PLP', 'BD1_DB3_COATING': 'Facility', 'BD1_CR22_MC': 'LC B1', 'BD1_CD2000_MC': 'LC B1', 'BD1_DB3_3_CD2000': 'LC B1', 'BD1_Syrus_02': 'LC B1', 'BD1_Solitair_02': 'LC B1', 'BD1_Syrus_03': 'LC B1', 'BD1_Solitair_01': 'LC B1', 'BD1_Oven_3F4': 'LC B1', 'BD1_Oven_3F5': 'LC B1', 'BD1_DB4_COATING': 'LC B1', 'BD1_EMULSION_RX': 'RX B1', 'BD1_ULTRA_CLEAN_MC': 'LC B1', 'BD1_DB11_AHU_DURALUX': 'Facility', 'BD1_DB14_PLASTIC': 'PLP', 'BD1_DB15_PLASTIC': 'PLP', 'BD1_HIGH_PRESS_URACA': 'PLP', 'BD1_DB10_SANDBLASTING': 'LC B1', 'BD1_COMP_AIR_GA90_1': 'Facility', 'BD1_COMP_AIR_GA90_2': 'Facility', 'BD1_DB1_BD6': 'Facility', 'BD1_NDR3_SERVER_RM3': 'IT', 'BD1_SDB_4-1': 'RX B1', 'BD1_VRF_F1': 'Facility', 'BD1_WASTE_WATER_PLANT': 'Facility', 'BD1_DB9_IPP': 'LG', 'BD1_DB7_PLASTIC': 'Facility', 'BD1_Poly_47_50': 'PLP', 'BD1_Dismantle_L2': 'PLP', 'BD1_SINGLE_TANK_NO-1': 'PLP', 'BD1_DB16_SPARE': 'PLP', 'BD1_New_RO': 'Facility', 'BD1_Temp_11_QC': 'PLP', 'BD1_Temp_12_QC': 'PLP', 'BD1_Solitair_05': 'LC B1', 'BD1_Solitair_04': 'LC B1', 'BD1_ELMA_COATING': 'LC B1', 'BD1_Solitair_03': 'LC B1', 'BD1_Syrus_04': 'LC B1', 'BD1_Syrus_01': 'LC B1', 'BD1_BD6_MOULD_PROD': 'MP', 'BD1_BD5_MOULD_PROD': 'MP', 'BD1_BD4_MOULD_PROD': 'MP', 'BD1_SANDBLAST_WET': 'LC B1', 'BD1_SANDBLAST_DRY': 'LC B1', 'BD1_COLD WARM_WATER_PUMPS': 'Facility', 'BD1_WATER_HEATERS': 'Facility', 'BD1_ULTRA_CLEAN_SAND': 'LC B1', 'BD1_SDB2.1_PACKING': 'LC B1', 'BD1_SDB_2-3': 'LC B1', 'BD1_Syrus_05': 'LC B1', 'BD1_Pump_PCW_ No_1': 'Facility', 'BD1_Pump_PCW_ No_2': 'Facility', 'BD2_TR1_MAIN': 'Facility', 'BD2_TR2_MAIN': 'Facility', 'BD2_TR3_MAIN': 'Facility', 'BD2_DB5_AHU': 'Facility', 'BD2_CHILLER_1': 'Facility', 'BD2_WATER_PUMPS': 'Facility', 'BD2_CHILLER_2': 'Facility', 'BD2_CHILLER_3_BACKUP': 'Facility', 'BD2_MCCB_800A': 'Facility', 'BD2_DB15_AHU': 'Facility', 'BD2_DB16_PLP': 'PLP', 'BD2_DB1_Ring': 'Facility', 'BD2_DB6_Tinting': 'LC B2', 'BD2_Dust_PLP_B2': 'PLP', 'BD2_Arburg_MC1': 'PLP', 'BD2_Emulsion_RX_B2': 'RX B2', 'BD2_DB_HVAC_F2': 'Facility', 'BD2_DB2_Ring': 'RX Post Production B2', 'BD2_DB8_PLASTIC': 'PLP', 'BD2_BD5_HP_Clean': 'PLP', 'BD2_ELMA_L6': 'PLP', 'BD2_ELMA_P_Clean_L1': 'PLP', 'BD2_DB4_UTILITIES': 'Facility', 'BD2_UCM96': 'LC B2', 'BD2_ILSUNG_1': 'LC B2', 'BD2_ILSUNG_2': 'LC B2', 'BD2_SDB4_1_PLP_2_107': 'PLP', 'BD2_RO_B2': 'Facility', 'BD2_URACA': 'PLP', 'BD2_DB12_RX': 'RX B2', 'BD2_RX_BRA': 'RX B2', 'BD2_RX_L1': 'RX B2', 'BD2_RX_L2': 'RX B2', 'BD2_RX_L3': 'RX B2', 'BD2_RX_L4': 'RX B2', 'BD2_DB10_PLASTIC': 'PLP', 'BD2_ELMA_Acid_L8': 'PLP', 'BD2_ELMA_Heat_L8': 'PLP', 'BD2_ELMA_P_Clean_L3': 'PLP', 'BD2_DB14_LENS': 'LC B2', 'BD2_DB3_UTILITIES': 'Facility', 'BD2_SDB3_Mix_F2B2': 'PLP', 'BD2_GA90_VSD': 'Facility', 'BD2_DB7_PLASTIC': 'PLP', 'BD2_DB7_2_NDR_2': 'IT', 'BD2_Temper_Oven_7-10': 'PLP', 'BD2_Temper_Oven_39-42': 'PLP', 'BD2_Dismantle_L4': 'PLP', 'BD2_DB7_1_Cast_B2': 'PLP', 'BD2_DB9_MONOMER': 'LG', 'BD2_DB13_RX_EMERGENCY': 'RX B2', 'BD2_Control_RX': 'RX B2', 'BD2_SYRUS1': 'LC B2', 'BD2_SYRUS2': 'LC B2', 'BD2_SYRUS3': 'LC B2', 'BD2_SYRUS4': 'LC B2', 'BD2_SOLITAIRE1': 'LC B2', 'BD2_SOLITAIRE2': 'LC B2', 'BD2_SOLITAIRE3': 'LC B2', 'BD2_SOLITAIRE4': 'LC B2', 'BD2_SOLITAIRE5': 'LC B2', 'BD2_SOLITAIRE6': 'LC B2', 'BD2_DL_OVEN01': 'LC B2', 'BD2_DL_OVEN02': 'LC B2', 'BD3_TR_Main': 'Facility', 'BD3_DB8_UF_Plant': 'Facility', 'BD3_DB9_Canteen': 'HR', 'BD3_DB10_AIR_CONDITION': 'Facility', 'BD3_DB1_TRAINING_CENTER': 'DVT', 'BD3_DB2_MATERIAL': 'PLP', 'BD3_DB1_RTHS': 'HR', 'BD3_SDB2_FINANCE_IT_HR': 'FI/CO', 'BD3_DB3_LOGISTIC_UF_PLANT': 'LG', 'BD3_DB4_TS_WORKSHOP': 'TS', 'BD3_DB5_TS_OFFICE_STORE': 'TS'};
+
+    const fallbackData = `
+Timestamp,BD1_DB1_BD6,BD1_DB2_UTILITIES,BD1_DB4_COATING
+01/01/2025 00:00,10.5,12.3,11.8
+01/01/2025 01:00,10.7,12.5,11.9
+01/01/2025 02:00,10.8,12.6,12.0
+01/02/2025 00:00,15.2,18.1,16.5
+01/02/2025 01:00,15.4,18.3,16.7
+01/02/2025 02:00,15.5,18.4,16.8
+`;
+
+    function parseCustomDate(dateStr) {
+      try {
+        const [datePart, timePart] = dateStr.split(' ');
+        if (!datePart || !timePart) throw new Error('Invalid date format: missing date or time');
+        const [day, month, year] = datePart.split('/').map(Number);
+        const [hour, minute] = timePart.split(':').map(Number);
+        if (isNaN(day) || isNaN(month) || isNaN(year) || isNaN(hour) || isNaN(minute)) {
+          throw new Error('Invalid date components');
+        }
+        const date = new Date(year, month - 1, day, hour, minute);
+        if (isNaN(date.getTime())) throw new Error('Invalid date format');
+        return date.getTime();
+      } catch (error) {
+        console.error('Error parsing date:', dateStr, error);
+        return null;
+      }
+    }
+
+    function getMonthKey(timestamp) {
+      try {
+        const [datePart] = timestamp.split(' ');
+        const [day, mon, year] = datePart.split('/').map(Number);
+        return `${year}-${String(mon).padStart(2, '0')}`;
+      } catch (error) {
+        console.error('Error getting month key:', timestamp, error);
+        return null;
+      }
+    }
+
+    function calculateMonthlyConsumption(data) {
+      const months = {};
+      data.data.forEach(row => {
+        const monthKey = getMonthKey(row[0]);
+        if (monthKey && !months[monthKey]) {
+          months[monthKey] = [];
+        }
+        if (monthKey) {
+          months[monthKey].push({
+            row: row,
+            ts: parseCustomDate(row[0])
+          });
+        }
+      });
+
+      delete months['2025-07'];
+
+      const monthlyLabels = Object.keys(months).sort();
+      const monthlyDeltas = {};
+
+      for (let i = 1; i < data.headers.length; i++) {
+        const meter = data.headers[i];
+        monthlyDeltas[meter] = monthlyLabels.map(monthKey => {
+          const monthData = months[monthKey];
+          if (monthData.length < 2) return 0;
+          monthData.sort((a, b) => a.ts - b.ts);
+          const first = parseFloat(monthData[0].row[i]) || 0;
+          const last = parseFloat(monthData[monthData.length - 1].row[i]) || 0;
+          return Math.max(0, last - first);
+        });
+      }
+
+      return { labels: monthlyLabels, deltas: monthlyDeltas };
+    }
+
+    function showErrorModal(message) {
+      const existingModal = document.querySelector('.error-modal');
+      if (existingModal) existingModal.remove();
+      const modal = document.createElement('div');
+      modal.className = 'error-modal';
+      modal.innerHTML = `
+        ${message}
+        <button onclick="this.parentElement.remove()">Close</button>
+      `;
+      document.body.appendChild(modal);
+      setTimeout(() => modal.remove(), 10000);
+    }
+
+    async function fetchWithRetry(url, retries = 3, delay = 2000) {
+      let controller;
+      for (let i = 0; i < retries; i++) {
+        controller = new AbortController();
+        try {
+          const timeoutId = setTimeout(() => controller.abort(), 8000);
+          const response = await fetch(url, {
+            cache: 'no-store',
+            signal: controller.signal
+          });
+          clearTimeout(timeoutId);
+          if (!response.ok) throw new Error(`HTTP ${response.status}`);
+          return await response.text();
+        } catch (error) {
+          if (error.name === 'AbortError' && i < retries - 1) {
+            console.warn(`Attempt ${i+1} timed out, retrying...`);
+            await new Promise(r => setTimeout(r, delay));
+            continue;
+          }
+          if (i === retries - 1) throw error;
+        }
+      }
+    }
+
+    async function loadData() {
+      const originalUrl = 'https://www.dropbox.com/scl/fi/96tcqmf7naotr8hhkl5sj/Power_meter_kWh.csv?rlkey=vt0wooiy41fzv21ll1k9fhlzo&raw=1';
+      const proxyUrls = [
+        'https://corsproxy.io/?',
+        'https://api.allorigins.win/raw?url='
+      ];
+
+      let csv = null;
+      let successfulProxy = null;
+
+      for (const proxy of proxyUrls) {
+        const fullUrl = proxy + encodeURIComponent(originalUrl);
+        try {
+          console.log(`Trying to fetch data from: ${fullUrl}`);
+          csv = await fetchWithRetry(fullUrl);
+          successfulProxy = proxy;
+          console.log(`Successfully fetched data using: ${successfulProxy}`);
+          break;
+        } catch (error) {
+          console.warn(`Failed to fetch from ${proxy}:`, error.message);
+        }
+      }
+
+      if (!csv) {
+        console.warn('All proxies failed. Using fallback data.');
+        csv = fallbackData;
+      }
+
+      try {
+        if (!csv || csv.trim() === '') {
+          throw new Error('Received empty CSV data');
+        }
+
+        const lines = csv.trim().split(/\r?\n/);
+        if (lines.length < 2) {
+          throw new Error('CSV data is too short or invalid');
+        }
+
+        const headers = lines[0].split(',').map(h => h.trim());
+        if (headers.length < 2) {
+          throw new Error('CSV headers are invalid or missing');
+        }
+
+        const data = lines.slice(1).map(line => {
+          const values = line.split(',');
+          if (values.length !== headers.length) {
+            console.warn(`Row length mismatch: expected ${headers.length}, got ${values.length}, skipping row: ${line}`);
+            return null;
+          }
+          return values;
+        }).filter(row => row !== null);
+
+        if (data.length === 0) {
+          throw new Error('No valid data rows found');
+        }
+
+        // Filter out excluded meters
+        const excludedIndices = [];
+        excludedMeters.forEach(meter => {
+          const index = headers.indexOf(meter);
+          if (index > 0) { // skip timestamp
+            excludedIndices.push(index);
+          }
+        });
+
+        let filteredHeaders = headers;
+        let filteredDataRows = data;
+
+        if (excludedIndices.length > 0) {
+          filteredHeaders = headers.filter((h, i) => i === 0 || !excludedIndices.includes(i));
+          filteredDataRows = data.map(row => {
+            return row.filter((_, i) => i === 0 || !excludedIndices.includes(i));
+          });
+          console.log(`Excluded ${excludedIndices.length} meters from data.`);
+        }
+
+        rawData = { timestamps: filteredDataRows.map(row => row[0]), headers: filteredHeaders, data: filteredDataRows };
+        filteredData = rawData; // Use all data for monthly
+
+        processData();
+      } catch (error) {
+        console.error('Error loading data:', error);
+        showErrorModal(`Failed to load data: ${error.message}`);
+      }
+    }
+
+    function processData() {
+      monthlyData = calculateMonthlyConsumption(filteredData);
+
+      allDatasets = [];
+      for (let i = 1; i < filteredData.headers.length; i++) {
+        const label = filteredData.headers[i];
+        const color = colors[(i - 1) % colors.length];
+        allDatasets.push({
+          label,
+          data: monthlyData.deltas[label],
+          borderColor: color,
+          backgroundColor: color + '20',
+          borderWidth: 3,
+          fill: false,
+          tension: 0.4,
+          pointRadius: 0,
+          pointHoverRadius: 6,
+          pointHoverBackgroundColor: color,
+          pointHoverBorderColor: '#fff',
+          pointHoverBorderWidth: 3
+        });
+      }
+
+      populateYearMonthSelect();
+      createMainTreeMap();
+      createOtherTreeMap();
+    }
+
+    function populateMonthsForYear(year) {
+      const monthSelect = document.getElementById('monthSelect');
+      monthSelect.innerHTML = '';
+      if (!monthlyData || monthlyData.labels.length === 0) {
+        monthSelect.innerHTML = '<option>No data available</option>';
+        return;
+      }
+      const availableMonths = monthlyData.labels
+        .filter(label => label.startsWith(year))
+        .map(label => parseInt(label.split('-')[1]))
+        .sort((a, b) => a - b);
+      if (availableMonths.length === 0) {
+        monthSelect.innerHTML = '<option>No data</option>';
+        return;
+      }
+      availableMonths.forEach(m => {
+        const option = document.createElement('option');
+        option.value = m;
+        option.textContent = `Month ${m}`;
+        monthSelect.appendChild(option);
+      });
+      // Set to the latest month for this year initially
+      monthSelect.value = availableMonths[availableMonths.length - 1];
+    }
+
+    function populateYearMonthSelect() {
+      const yearSelect = document.getElementById('yearSelect');
+      const monthSelect = document.getElementById('monthSelect');
+      yearSelect.innerHTML = '';
+      monthSelect.innerHTML = '';
+      if (!monthlyData || monthlyData.labels.length === 0) {
+        console.warn('No monthly data for selects');
+        yearSelect.innerHTML = '<option>No data available</option>';
+        monthSelect.innerHTML = '<option>No data available</option>';
+        return;
+      }
+
+      // Compute latest full month index
+      let latestFullIndex = monthlyData.labels.length - 1;
+      const currentYear = currentDate.getFullYear();
+      const currentMon = currentDate.getMonth() + 1;
+      for (let i = monthlyData.labels.length - 1; i >= 0; i--) {
+        const [y, m] = monthlyData.labels[i].split('-').map(Number);
+        if (y < currentYear || m < currentMon) {
+          latestFullIndex = i;
+          break;
+        }
+        const lastDayOfMonth = new Date(y, m, 0).getDate();
+        if (y === currentYear && m === currentMon && currentDate.getDate() >= lastDayOfMonth) {
+          latestFullIndex = i;
+          break;
+        }
+      }
+      const [latestYearStr, latestMonStr] = monthlyData.labels[latestFullIndex].split('-');
+      const latestYear = latestYearStr;
+      const latestMon = parseInt(latestMonStr);
+
+      // Populate years
+      const years = [...new Set(monthlyData.labels.map(label => label.split('-')[0]))].sort();
+      years.forEach(year => {
+        const option = document.createElement('option');
+        option.value = year;
+        option.textContent = `Year ${year}`;
+        yearSelect.appendChild(option);
+      });
+
+      // Set year and populate months
+      yearSelect.value = latestYear;
+      populateMonthsForYear(latestYear);
+      // Override to latest full month
+      monthSelect.value = latestMon;
+
+      // Event listeners
+      yearSelect.addEventListener('change', (e) => {
+        populateMonthsForYear(e.target.value);
+        updateCharts();
+      });
+      monthSelect.addEventListener('change', updateCharts);
+    }
+
+    function updateCharts() {
+      createMainTreeMap();
+      createOtherTreeMap();
+    }
+
+    function destroyChart(instance, name) {
+      if (instance) {
+        try {
+          instance.destroy();
+          console.log(`${name} chart destroyed successfully`);
+        } catch (err) {
+          console.warn(`Error destroying ${name} chart:`, err);
+        }
+      } else {
+        console.warn(`${name} chart instance not found`);
+      }
+    }
+
+    function cleanupOnUnload() {
+      if (refreshInterval) {
+        clearInterval(refreshInterval);
+        refreshInterval = null;
+        console.log('Refresh interval cleared');
+      }
+      destroyChart(mainTreeMapInstance, 'Main TreeMap');
+      destroyChart(otherTreeMapInstance, 'Other TreeMap');
+      destroyChart(compareChartInstance, 'Compare Chart');
+      mainTreeMapInstance = null;
+      otherTreeMapInstance = null;
+      compareChartInstance = null;
+    }
+
+    function formatNumber(value) {
+      return value.toLocaleString('en-US', { maximumFractionDigits: 1 });
+    }
+
+    function createTreeMapChart(ctx, tempData, total, chartLabel) {
+      if (!ctx) return null;
+
+      const treeData = [];
+      let otherSum = 0;
+      tempData.forEach(item => {
+        const percent = (item.value / total) * 100;
+        if (percent < 1) {
+          otherSum += item.value;
+        } else {
+          treeData.push({
+            name: item.label,
+            value: item.value,
+            color: item.color,
+            percent: percent.toFixed(1)
+          });
+        }
+      });
+
+      if (otherSum > 0) {
+        const otherPercent = (otherSum / total) * 100;
+        treeData.push({
+          name: 'Other',
+          value: otherSum,
+          color: '#999999',
+          percent: otherPercent.toFixed(1)
+        });
+      }
+
+      const unit = ' kWh';
+
+      return new Chart(ctx, {
+        type: 'treemap',
+        data: {
+          datasets: [{
+            label: chartLabel,
+            tree: treeData,
+            key: 'value',
+            backgroundColor: function(ctx) {
+              if (ctx.type !== 'data') return 'transparent';
+              return ctx.raw._data.color || colors[Math.floor(Math.random() * colors.length)];
+            },
+            borderColor: '#fff',
+            borderWidth: 1,
+            spacing: 1,
+            labels: {
+              display: true,
+              align: 'center',
+              position: 'center',
+              font: { size: 12, weight: 'bold' },
+              color: '#fff',
+              formatter: function(ctx) {
+                if (ctx.type !== 'data') return;
+                const data = ctx.raw._data;
+                return [data.name, formatNumber(data.value) + unit, data.percent + '%'];
+              }
+            }
+          }]
+        },
+        options: {
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              callbacks: {
+                title: function(ctx) {
+                  return ctx[0].raw._data.name;
+                },
+                label: function(ctx) {
+                  const data = ctx.raw._data;
+                  return formatNumber(data.value) + unit + ' (' + data.percent + '%)';
+                }
+              }
+            }
+          }
+        }
+      });
+    }
+
+    function createMainTreeMap() {
+      const ctx = document.getElementById('mainTreeMapChart')?.getContext('2d');
+      destroyChart(mainTreeMapInstance, 'Main TreeMap');
+      if (!ctx || !monthlyData || monthlyData.labels.length === 0) {
+        console.error('Main TreeMap chart canvas context not found or no data');
+        return;
+      }
+      const selectedYear = document.getElementById('yearSelect').value;
+      const selectedMonthNum = parseInt(document.getElementById('monthSelect').value);
+      const selectedMonthKey = `${selectedYear}-${String(selectedMonthNum).padStart(2, '0')}`;
+      const selectedIndex = monthlyData.labels.indexOf(selectedMonthKey);
+      if (selectedIndex === -1) {
+        console.error('Selected month not found');
+        return;
+      }
+      const [year, mon] = [selectedYear, selectedMonthNum].map(Number);
+      const lastDay = new Date(year, mon, 0).getDate();
+      const isCurrentMonth = (year === currentDate.getFullYear() && mon === currentDate.getMonth() + 1);
+      let warning = '';
+      if (isCurrentMonth && currentDate.getDate() < lastDay) {
+        warning = 'ข้อมูลยังไม่เต็มเดือน';
+      }
+      document.getElementById('mainWarning').textContent = warning;
+      const tempData = [];
+      let total = 0;
+
+      allDatasets.forEach((dataset) => {
+        const label = dataset.label;
+        if (!mainMeters.includes(label)) return;
+        const value = monthlyData.deltas[label][selectedIndex] || 0;
+        const color = dataset.borderColor;
+        if (value > 0) {
+          tempData.push({ label, value, color });
+          total += value;
+        }
+      });
+
+      if (total === 0) {
+        console.warn('No valid data for Main Tree Map');
+        return;
+      }
+
+      mainTreeMapInstance = createTreeMapChart(ctx, tempData, total, 'Main Transformers Monthly Allocation Tree Map');
+    }
+
+    function createOtherTreeMap() {
+      const ctx = document.getElementById('otherTreeMapChart')?.getContext('2d');
+      destroyChart(otherTreeMapInstance, 'Other TreeMap');
+      if (!ctx || !monthlyData || monthlyData.labels.length === 0) {
+        console.error('Other TreeMap chart canvas context not found or no data');
+        return;
+      }
+      const selectedYear = document.getElementById('yearSelect').value;
+      const selectedMonthNum = parseInt(document.getElementById('monthSelect').value);
+      const selectedMonthKey = `${selectedYear}-${String(selectedMonthNum).padStart(2, '0')}`;
+      const selectedIndex = monthlyData.labels.indexOf(selectedMonthKey);
+      if (selectedIndex === -1) {
+        console.error('Selected month not found');
+        return;
+      }
+      const [year, mon] = [selectedYear, selectedMonthNum].map(Number);
+      const lastDay = new Date(year, mon, 0).getDate();
+      const isCurrentMonth = (year === currentDate.getFullYear() && mon === currentDate.getMonth() + 1);
+      let warning = '';
+      if (isCurrentMonth && currentDate.getDate() < lastDay) {
+        warning = 'ข้อมูลยังไม่เต็มเดือน';
+      }
+      document.getElementById('otherWarning').textContent = warning;
+
+      // Calculate sum of main meters
+      let sumMain = 0;
+      allDatasets.forEach((dataset) => {
+        const label = dataset.label;
+        if (mainMeters.includes(label)) {
+          sumMain += monthlyData.deltas[label][selectedIndex] || 0;
+        }
+      });
+
+      const groupToValue = {};
+      const groupToSection = {};
+      let sum11111 = 0;
+
+      allDatasets.forEach((dataset) => {
+        const label = dataset.label;
+        if (mainMeters.includes(label)) return;
+        const value = monthlyData.deltas[label][selectedIndex] || 0;
+        if (value <= 0) return;
+        const cost = meterToCost[label] || '';
+        if (!cost.trim()) return; // Skip if cost is empty or whitespace
+        if (cost === '11111') {
+          sum11111 += value;
+          return;
+        }
+        const section = meterToSection[label] || '';
+        const groupKey = cost;
+        groupToValue[groupKey] = (groupToValue[groupKey] || 0) + value;
+        if (!groupToSection[groupKey]) groupToSection[groupKey] = section;
+      });
+
+      if (groupToValue['11460']) {
+        groupToValue['11460'] = Math.max(0, groupToValue['11460'] - sum11111);
+      }
+
+      let totalCostCenters = 0;
+      for (const v of Object.values(groupToValue)) {
+        totalCostCenters += v;
+      }
+
+      const facilityValue = Math.max(0, sumMain - totalCostCenters);
+
+      // Add Facility as 11203
+      const facilityKey = '11203';
+      groupToValue[facilityKey] = (groupToValue[facilityKey] || 0) + facilityValue;
+      groupToSection[facilityKey] = 'Facility';
+
+      const totalForChart = sumMain;
+
+      if (totalForChart === 0) {
+        console.warn('No valid data for Other Tree Map');
+        return;
+      }
+
+      const tempData = [];
+      let index = 0;
+      for (const group in groupToValue) {
+        const gValue = groupToValue[group];
+        if (gValue <= 0) continue;
+        const gSection = groupToSection[group] || '';
+        const isNumericGroup = /^\d+$/.test(group);
+        let name = isNumericGroup ? `${group} - ${gSection}` : group;
+        tempData.push({ label: name, value: gValue, color: colors[index % colors.length] });
+        index++;
+      }
+
+      otherTreeMapInstance = createTreeMapChart(ctx, tempData, totalForChart, 'Other Meters Monthly Allocation Tree Map');
+    }
+
+    function exportCSV() {
+      if (!monthlyData || !rawData) {
+        showErrorModal('No data available to export.');
+        return;
+      }
+      const allMeters = filteredData.headers.slice(1);
+
+      let csvContent = 'Month,' + allMeters.join(',') + '\n';
+      monthlyData.labels.forEach((month, idx) => {
+        let row = month;
+        allMeters.forEach(meter => {
+          row += `,${monthlyData.deltas[meter][idx].toFixed(1)}`;
+        });
+        csvContent += row + '\n';
+      });
+
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(blob);
+      link.download = `monthly_energy_data_${new Date().toISOString().split('T')[0]}.csv`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
+
+    function exportPNG() {
+      const canvases = [];
+      if (mainTreeMapInstance) {
+        canvases.push({ canvas: mainTreeMapInstance.canvas, name: `main_transformers_monthly_allocation_tree_map_kWh` });
+      }
+      if (otherTreeMapInstance) {
+        canvases.push({ canvas: otherTreeMapInstance.canvas, name: `other_meters_monthly_allocation_tree_map_kWh` });
+      }
+
+      if (canvases.length === 0) {
+        showErrorModal('No chart available to export.');
+        return;
+      }
+
+      const scale = 2;
+
+      canvases.forEach(item => {
+        const tempCanvas = document.createElement('canvas');
+        const originalWidth = item.canvas.width;
+        const originalHeight = item.canvas.height;
+
+        tempCanvas.width = originalWidth * scale;
+        tempCanvas.height = originalHeight * scale;
+
+        const tempCtx = tempCanvas.getContext('2d');
+        tempCtx.setTransform(scale, 0, 0, scale, 0, 0);
+        tempCtx.fillStyle = 'white';
+        tempCtx.fillRect(0, 0, originalWidth, originalHeight);
+        tempCtx.drawImage(item.canvas, 0, 0);
+        tempCtx.setTransform(1, 0, 0, 1, 0, 0);
+
+        const link = document.createElement('a');
+        link.download = `${item.name}_${new Date().toISOString().split('T')[0]}.png`;
+        link.href = tempCanvas.toDataURL('image/png', 1.0);
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+      });
+    }
+
+    // Compare Modal Functions
+    function openCompareModal() {
+      if (!monthlyData || monthlyData.labels.length === 0) {
+        showErrorModal('No monthly data available for comparison.');
+        return;
+      }
+      const modal = document.getElementById('compareModal');
+      const month1Select = document.getElementById('month1Select');
+      const month2Select = document.getElementById('month2Select');
+      month1Select.innerHTML = '';
+      month2Select.innerHTML = '';
+      monthlyData.labels.forEach((month, index) => {
+        const option1 = new Option(month, index);
+        const option2 = new Option(month, index);
+        month1Select.add(option1);
+        month2Select.add(option2);
+      });
+      month1Select.value = monthlyData.labels.length - 2; // Previous month
+      month2Select.value = monthlyData.labels.length - 1; // Latest month
+      modal.style.display = 'block';
+      updateCompareChart();
+    }
+
+    function closeCompareModal() {
+      const modal = document.getElementById('compareModal');
+      modal.style.display = 'none';
+      destroyChart(compareChartInstance, 'Compare Chart');
+      document.getElementById('statsGrid').innerHTML = '';
+    }
+
+    function updateCompareChart() {
+      const month1Index = parseInt(document.getElementById('month1Select').value);
+      const month2Index = parseInt(document.getElementById('month2Select').value);
+      const group = document.getElementById('groupSelect').value;
+      const month1Label = monthlyData.labels[month1Index];
+      const month2Label = monthlyData.labels[month2Index];
+
+      let labels = [];
+      let data1 = [];
+      let data2 = [];
+      let total1 = 0;
+      let total2 = 0;
+
+      if (group === 'main') {
+        mainMeters.forEach(meter => {
+          if (monthlyData.deltas[meter]) {
+            const val1 = monthlyData.deltas[meter][month1Index] || 0;
+            const val2 = monthlyData.deltas[meter][month2Index] || 0;
+            if (val1 > 0 || val2 > 0) {
+              labels.push(meter);
+              data1.push(val1);
+              data2.push(val2);
+              total1 += val1;
+              total2 += val2;
+            }
+          }
+        });
+      } else { // cost
+        const groupToValue1 = {};
+        const groupToValue2 = {};
+        let sum11111_1 = 0;
+        let sum11111_2 = 0;
+        allDatasets.forEach((dataset) => {
+          const label = dataset.label;
+          if (mainMeters.includes(label)) return;
+          const val1 = monthlyData.deltas[label][month1Index] || 0;
+          const val2 = monthlyData.deltas[label][month2Index] || 0;
+          if (val1 <= 0 && val2 <= 0) return;
+          const cost = meterToCost[label] || '';
+          if (!cost.trim()) return;
+          if (cost === '11111') {
+            sum11111_1 += val1;
+            sum11111_2 += val2;
+            return;
+          }
+          const section = meterToSection[label] || '';
+          const groupKey = cost;
+          groupToValue1[groupKey] = (groupToValue1[groupKey] || 0) + val1;
+          groupToValue2[groupKey] = (groupToValue2[groupKey] || 0) + val2;
+        });
+        if (groupToValue1['11460']) {
+          groupToValue1['11460'] = Math.max(0, groupToValue1['11460'] - sum11111_1);
+        }
+        if (groupToValue2['11460']) {
+          groupToValue2['11460'] = Math.max(0, groupToValue2['11460'] - sum11111_2);
+        }
+
+        // Calculate Facility for both months
+        let sumMain1 = 0;
+        mainMeters.forEach(meter => {
+          if (monthlyData.deltas[meter]) {
+            sumMain1 += monthlyData.deltas[meter][month1Index] || 0;
+          }
+        });
+        let sumMain2 = 0;
+        mainMeters.forEach(meter => {
+          if (monthlyData.deltas[meter]) {
+            sumMain2 += monthlyData.deltas[meter][month2Index] || 0;
+          }
+        });
+        let totalFromGroups1 = 0;
+        for (const v of Object.values(groupToValue1)) {
+          totalFromGroups1 += v;
+        }
+        let totalFromGroups2 = 0;
+        for (const v of Object.values(groupToValue2)) {
+          totalFromGroups2 += v;
+        }
+        const facilityValue1 = Math.max(0, sumMain1 - totalFromGroups1);
+        const facilityValue2 = Math.max(0, sumMain2 - totalFromGroups2);
+
+        // Add Facility as 11203
+        const facilityKey = '11203';
+        groupToValue1[facilityKey] = (groupToValue1[facilityKey] || 0) + facilityValue1;
+        groupToValue2[facilityKey] = (groupToValue2[facilityKey] || 0) + facilityValue2;
+
+        const allGroups = [...new Set([...Object.keys(groupToValue1), ...Object.keys(groupToValue2)])];
+        allGroups.forEach(groupKey => {
+          const val1 = groupToValue1[groupKey] || 0;
+          const val2 = groupToValue2[groupKey] || 0;
+          if (val1 <= 0 && val2 <= 0) return;
+          const section = groupKey === '11203' ? 'Facility' : (meterToSection[Object.keys(meterToCost).find(k => meterToCost[k] === groupKey)] || '');
+          const name = /^\d+$/.test(groupKey) ? `${groupKey} - ${section}` : groupKey;
+          labels.push(name);
+          data1.push(val1);
+          data2.push(val2);
+          total1 += val1;
+          total2 += val2;
+        });
+      }
+
+      if (labels.length === 0) {
+        showErrorModal('No data available for selected comparison.');
+        return;
+      }
+
+      const ctx = document.getElementById('compareChart')?.getContext('2d');
+      destroyChart(compareChartInstance, 'Compare Chart');
+
+      compareChartInstance = new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: labels,
+          datasets: [
+            {
+              label: month1Label,
+              data: data1,
+              backgroundColor: 'rgba(54, 162, 235, 0.8)',
+              borderColor: 'rgba(54, 162, 235, 1)',
+              borderWidth: 1
+            },
+            {
+              label: month2Label,
+              data: data2,
+              backgroundColor: 'rgba(75, 192, 192, 0.8)',
+              borderColor: 'rgba(75, 192, 192, 1)',
+              borderWidth: 1
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          scales: {
+            y: {
+              beginAtZero: true,
+              ticks: { callback: function(value) { return value + ' kWh'; } }
+            }
+          },
+          plugins: {
+            legend: { display: true, position: 'top' },
+            tooltip: {
+              callbacks: {
+                label: function(ctx) {
+                  return ctx.dataset.label + ': ' + ctx.parsed.y.toFixed(1) + ' kWh';
+                }
+              }
+            }
+          }
+        }
+      });
+
+      // Update Stats
+      const difference = total2 - total1;
+      const percentChange = total1 > 0 ? ((difference / total1) * 100).toFixed(1) : 0;
+      const diffClass = difference > 0 ? 'negative' : 'positive';
+      const changeClass = difference > 0 ? 'negative' : 'positive';
+
+      document.getElementById('statsGrid').innerHTML = `
+        <div class="stat-card">
+          <div class="stat-value">${total1.toFixed(1)} kWh</div>
+          <div class="stat-label">Total ${month1Label}</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value">${total2.toFixed(1)} kWh</div>
+          <div class="stat-label">Total ${month2Label}</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value ${diffClass}">${difference.toFixed(1)} kWh</div>
+          <div class="stat-label">Difference</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value ${changeClass}">${percentChange}%</div>
+          <div class="stat-label">% Change</div>
+        </div>
+      `;
+    }
+
+    // Close modal on outside click
+    window.onclick = function(event) {
+      const modal = document.getElementById('compareModal');
+      if (event.target === modal) {
+        closeCompareModal();
+      }
+    }
+
+    function startAutoRefresh() {
+      if (refreshInterval) clearInterval(refreshInterval);
+      refreshInterval = setInterval(loadData, 15 * 60 * 1000);
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      document.body.style.opacity = '0';
+      setTimeout(() => {
+        document.body.style.transition = 'opacity 0.5s ease';
+        document.body.style.opacity = '1';
+      }, 100);
+      loadData().then(() => {
+        startAutoRefresh();
+      }).catch(error => {
+        console.error('Initial data load failed:', error);
+        showErrorModal(`Initial data load failed: ${error.message}`);
+      });
+    });
+
+    // Cleanup on page unload to prevent memory leaks
+    window.addEventListener('beforeunload', cleanupOnUnload);
+
+    document.addEventListener("contextmenu", e => e.preventDefault());
+    document.addEventListener("keydown", e => {
+      if ((e.ctrlKey && ['c', 'x', 'u', 's', 'p'].includes(e.key.toLowerCase())) || e.key === "F12") {
+        e.preventDefault();
+      }
+    });
+  </script>
+</body>
+</html>
