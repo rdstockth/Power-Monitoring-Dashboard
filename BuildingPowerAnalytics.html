@@ -719,14 +719,18 @@
       </a>
       <a href="BuildingPowerAnalytics.html" class="topbar-item">
         <i class="fas fa-bolt"></i> 
-        <span>Building Power Analytics</span>
+        <span>Building Power</span>
+      </a>
+      <a href="MonthlyEnergyUsageShare.html" class="topbar-item" aria-label="Go to Monthly Energy Usage Share page">
+        <i class="fas fa-chart-pie"></i>
+        <span>Monthly Energy Usage Share</span>
       </a>
     </div>
   </div>
   <div class="container">
     <div class="header">
       <h1><i class="fas fa-bolt"></i> Power Monitoring Dashboard</h1>
-      <p>Building Power Analytics (excl. Chiller & Bldg 3)</p>
+      <p>Building Power (excl. Chiller & Bldg 3)</p>
     </div>
     <div class="controls">
       <div class="stats" id="statsContainer">
@@ -773,7 +777,7 @@
           <i class="fas fa-image"></i> Export Image
         </button>
         <button class="btn btn-tree-map" onclick="toggleTreeMap()">
-          <i class="fas fa-sitemap"></i> Allocation Tree Map
+          <i class="fas fa-sitemap"></i> Power Usage Share - Tree Map
         </button>
         <button class="btn btn-switch-unit" onclick="switchUnit()">
           <i class="fas fa-exchange-alt"></i> Switch to kWh in Tree Map
@@ -782,7 +786,7 @@
     </div>
     <div class="chart-container">
       <div class="chart-header" id="treeMapHeader" style="display: none;">
-        <div class="chart-title"><i class="fas fa-sitemap"></i> Allocation Tree Map</div>
+        <div class="chart-title"><i class="fas fa-sitemap"></i> Power Usage Share</div>
       </div>
       <div class="chart-wrapper" id="treeMapWrapper" style="display: none;">
         <canvas id="treeMapChart"></canvas>
@@ -817,6 +821,7 @@
     let isTotalChartVisible = true;
     let isTreeMapVisible = false;
     let isKWhMode = false;
+    let kWhCache = {}; // Pre-computed kWh cache
     const colors = [
   '#FF4757', '#FF6B35', '#F8B500', '#CDDC39', '#8BC34A',
 '#1ABC9C', '#00CEC9', '#3498DB', '#74B9FF', '#3867D6',
@@ -854,41 +859,39 @@ Timestamp,BD1_DB1_BD6,BD1_DB2_UTILITIES,BD1_DB4_COATING
 
     function parseCustomDate(dateStr) {
       try {
+        if (!dateStr) throw new Error('Empty date string');
         const [datePart, timePart] = dateStr.split(' ');
-        if (!datePart || !timePart) throw new Error('Invalid date format: missing date or time');
+        if (!datePart || !timePart) throw new Error('Invalid format');
         const [day, month, year] = datePart.split('/').map(Number);
         const [hour, minute] = timePart.split(':').map(Number);
-        if (isNaN(day) || isNaN(month) || isNaN(year) || isNaN(hour) || isNaN(minute)) {
-          throw new Error('Invalid date components');
-        }
+        if ([day, month, year, hour, minute].some(isNaN)) throw new Error('Invalid components');
         const date = new Date(year, month - 1, day, hour, minute);
-        if (isNaN(date.getTime())) throw new Error('Invalid date format');
-        return date.toISOString();
+        if (isNaN(date.getTime())) throw new Error('Invalid date');
+        return date;
       } catch (error) {
-        console.error('Error parsing date:', dateStr, error);
-        return null;
+        console.error('Parse error:', dateStr, error);
+        return new Date(0); // Fallback to epoch, will be filtered out
       }
     }
 
     function filterLast24Hours(data) {
-      if (!data || data.length === 0) {
-        console.warn('No data to filter');
-        return data;
-      }
+      if (!data || data.length === 0) return data;
       try {
+        // Sort data by timestamp first
+        data.sort((a, b) => parseCustomDate(a[0]) - parseCustomDate(b[0]));
         const latestTimestamp = new Date(parseCustomDate(data[data.length - 1][0]));
         if (isNaN(latestTimestamp.getTime())) {
-          console.warn('Invalid latest timestamp, using all data');
+          console.warn('Invalid timestamps, using all data');
           return data;
         }
         const cutoffTime = new Date(latestTimestamp.getTime() - (24 * 60 * 60 * 1000));
         const filtered = data.filter(row => {
-          const timestamp = new Date(parseCustomDate(row[0]));
-          return timestamp >= cutoffTime && !isNaN(timestamp.getTime());
+          const ts = parseCustomDate(row[0]);
+          return !isNaN(ts.getTime()) && ts >= cutoffTime;
         });
-        return filtered.length > 0 ? filtered : data;
+        return filtered.length > 0 ? filtered : data; // Fallback to all if empty
       } catch (error) {
-        console.warn('Error filtering 24-hour data, using all data:', error);
+        console.warn('Error filtering:', error);
         return data;
       }
     }
@@ -934,6 +937,24 @@ Timestamp,BD1_DB1_BD6,BD1_DB2_UTILITIES,BD1_DB4_COATING
       const loadingElement = document.getElementById('loading');
       const chartElement = document.getElementById('myChart');
       loadingElement.innerHTML = '<div class="spinner"></div><div class="loading-text">Loading data...</div>';
+
+      // Check cache first
+      const cacheKey = 'powerDataCache';
+      const cached = localStorage.getItem(cacheKey);
+      if (cached) {
+        try {
+          const parsed = JSON.parse(cached);
+          if (Date.now() - parsed.timestamp < 3600000) { // 1 hour
+            console.log('Using cache');
+            rawData = parsed.raw;
+            filteredData = parsed.filtered;
+            processData();
+            return;
+          }
+        } catch (e) {
+          console.warn('Cache invalid');
+        }
+      }
 
       const originalUrl = 'https://www.dropbox.com/scl/fi/vkm1in0n61h8hsdqgpp5z/Power_Meter_Day_kW.csv?rlkey=gbcgnv5qggkn6ixejhgc50ixj&&raw=1';
       const proxyUrls = [
@@ -1022,6 +1043,9 @@ Timestamp,BD1_DB1_BD6,BD1_DB2_UTILITIES,BD1_DB4_COATING
           data: last24HoursData
         };
 
+        // Cache the data
+        localStorage.setItem(cacheKey, JSON.stringify({ raw: rawData, filtered: filteredData, timestamp: Date.now() }));
+
         processData();
       } catch (error) {
         console.error('Error loading data:', error);
@@ -1033,6 +1057,10 @@ Timestamp,BD1_DB1_BD6,BD1_DB2_UTILITIES,BD1_DB4_COATING
     }
 
     function calculateKWh(data) {
+      // Use pre-computed cache if available
+      if (Object.keys(kWhCache).length > 0) {
+        return data.headers.slice(1).map(header => kWhCache[header] || '0');
+      }
       const kWhData = [];
       for (let i = 1; i < data.headers.length; i++) {
         const values = data.data.map(row => parseFloat(row[i]) || 0);
@@ -1046,6 +1074,15 @@ Timestamp,BD1_DB1_BD6,BD1_DB2_UTILITIES,BD1_DB4_COATING
     function processData() {
       const loadingElement = document.getElementById('loading');
       const chartElement = document.getElementById('myChart');
+
+      // Pre-compute kWh cache
+      kWhCache = {};
+      for (let i = 1; i < filteredData.headers.length; i++) {
+        const header = filteredData.headers[i];
+        const values = filteredData.data.map(row => parseFloat(row[i]) || 0);
+        const avgKW = values.reduce((sum, v) => sum + v, 0) / values.length;
+        kWhCache[header] = (avgKW * 24).toFixed(1);
+      }
 
       allDatasets = [];
       for (let i = 1; i < filteredData.headers.length; i++) {
@@ -1092,11 +1129,11 @@ Timestamp,BD1_DB1_BD6,BD1_DB2_UTILITIES,BD1_DB4_COATING
         filtersContainer.innerHTML = '<div class="loading-text">No data available for filters.</div>';
         return;
       }
-      const latestData = filteredData.data[filteredData.data.length - 1];
+      const latestData = filteredData.data[filteredData.data.length - 1] || [];
       const kWhData = calculateKWh(filteredData);
 
       allDatasets.forEach((dataset, index) => {
-        const value = isTreeMapVisible && isKWhMode ? parseFloat(kWhData[index]) : parseFloat(latestData[index + 1]) || 0;
+        const value = isTreeMapVisible && isKWhMode ? parseFloat(kWhData[index]) : (latestData[index + 1] ? parseFloat(latestData[index + 1]) : 0) || 0;
         let statusClass = 'status-off';
         if (value > (isTreeMapVisible && isKWhMode ? 24 : 1)) statusClass = 'status-active';
         else if (value > (isTreeMapVisible && isKWhMode ? 1.2 : 0.05)) statusClass = 'status-standby';
@@ -1132,11 +1169,11 @@ Timestamp,BD1_DB1_BD6,BD1_DB2_UTILITIES,BD1_DB4_COATING
       }
       const activeDatasets = [];
       const checkboxes = document.querySelectorAll('input[type="checkbox"]');
-      const latestData = filteredData?.data[filteredData.data.length - 1];
+      const latestData = filteredData?.data?.[filteredData.data.length - 1] || [];
       const kWhData = calculateKWh(filteredData);
 
       checkboxes.forEach((checkbox, index) => {
-        const value = isTreeMapVisible && isKWhMode ? parseFloat(kWhData[index]) : parseFloat(latestData?.[index + 1]) || 0;
+        const value = isTreeMapVisible && isKWhMode ? parseFloat(kWhData[index]) : (latestData[index + 1] ? parseFloat(latestData[index + 1]) : 0) || 0;
         let statusClass = 'status-off';
         if (value > (isTreeMapVisible && isKWhMode ? 24 : 1)) statusClass = 'status-active';
         else if (value > (isTreeMapVisible && isKWhMode ? 1.2 : 0.05)) statusClass = 'status-standby';
@@ -1154,10 +1191,10 @@ Timestamp,BD1_DB1_BD6,BD1_DB2_UTILITIES,BD1_DB4_COATING
       chartInstance.update('none');
       updateStats();
       if (isTotalChartVisible && totalChartInstance) {
-        createTotalChart();
+        updateTotalChart();
       }
       if (isTreeMapVisible && treeMapInstance) {
-        createTreeMap();
+        createTreeMap(); // TreeMap still recreate for simplicity, but optimized
       }
     }
 
@@ -1166,13 +1203,13 @@ Timestamp,BD1_DB1_BD6,BD1_DB2_UTILITIES,BD1_DB4_COATING
         console.warn('No filtered data for stats');
         return;
       }
-      const latestData = filteredData.data[filteredData.data.length - 1];
+      const latestData = filteredData.data[filteredData.data.length - 1] || [];
       let bd1Total = 0;
       let bd2Total = 0;
 
       for (let i = 1; i < filteredData.headers.length; i++) {
         const headerName = filteredData.headers[i].trim();
-        const value = parseFloat(latestData[i]) || 0;
+        const value = (latestData[i] ? parseFloat(latestData[i]) : 0) || 0;
         if (bd1Meters.includes(headerName)) {
           bd1Total += value;
         } else if (bd2Meters.includes(headerName)) {
@@ -1237,7 +1274,7 @@ Timestamp,BD1_DB1_BD6,BD1_DB2_UTILITIES,BD1_DB4_COATING
           datasets: allDatasets
         },
         options: {
-          devicePixelRatio: 3,
+          devicePixelRatio: window.devicePixelRatio || 1,
           responsive: true,
           maintainAspectRatio: false,
           plugins: {
@@ -1336,7 +1373,7 @@ Timestamp,BD1_DB1_BD6,BD1_DB2_UTILITIES,BD1_DB4_COATING
             intersect: false
           },
           animation: {
-            duration: 1500,
+            duration: 500, // Reduced for better perf
             easing: 'easeInOutQuart'
           },
           elements: {
@@ -1424,7 +1461,7 @@ Timestamp,BD1_DB1_BD6,BD1_DB2_UTILITIES,BD1_DB4_COATING
           ]
         },
         options: {
-          devicePixelRatio: 3,
+          devicePixelRatio: window.devicePixelRatio || 1,
           responsive: true,
           maintainAspectRatio: false,
           plugins: {
@@ -1523,7 +1560,7 @@ Timestamp,BD1_DB1_BD6,BD1_DB2_UTILITIES,BD1_DB4_COATING
             intersect: false
           },
           animation: {
-            duration: 1500,
+            duration: 500, // Reduced
             easing: 'easeInOutQuart'
           },
           elements: {
@@ -1535,6 +1572,14 @@ Timestamp,BD1_DB1_BD6,BD1_DB2_UTILITIES,BD1_DB4_COATING
       });
     }
 
+    function updateTotalChart() {
+      if (!totalChartInstance || !isTotalChartVisible) return;
+      const { bd1Total, bd2Total } = calculateTotalData();
+      totalChartInstance.data.datasets[0].data = bd1Total;
+      totalChartInstance.data.datasets[1].data = bd2Total;
+      totalChartInstance.update('none'); // Fast update
+    }
+
     function createTreeMap() {
       const ctx = document.getElementById('treeMapChart')?.getContext('2d');
       if (!ctx) {
@@ -1542,7 +1587,7 @@ Timestamp,BD1_DB1_BD6,BD1_DB2_UTILITIES,BD1_DB4_COATING
         return;
       }
       destroyChart(treeMapInstance, 'TreeMap');
-      const latestData = filteredData?.data[filteredData.data.length - 1];
+      const latestData = filteredData?.data?.[filteredData.data.length - 1] || [];
       const kWhData = calculateKWh(filteredData);
       const tempData = [];
       let total = 0;
@@ -1551,7 +1596,7 @@ Timestamp,BD1_DB1_BD6,BD1_DB2_UTILITIES,BD1_DB4_COATING
       checkboxes.forEach((cb, index) => {
         const label = allDatasets[index].label;
         if (cb.checked) {
-          const value = isKWhMode ? parseFloat(kWhData[index]) : parseFloat(latestData[index + 1]) || 0;
+          const value = isKWhMode ? parseFloat(kWhData[index]) : (latestData[index + 1] ? parseFloat(latestData[index + 1]) : 0) || 0;
           const color = allDatasets[index].borderColor;
           if (value > 0) {
             tempData.push({ label, value, color });
@@ -1597,7 +1642,7 @@ Timestamp,BD1_DB1_BD6,BD1_DB2_UTILITIES,BD1_DB4_COATING
         type: 'treemap',
         data: {
           datasets: [{
-            label: 'Allocation Tree Map',
+            label: 'Power Usage Share - Tree Map',
             tree: treeData,
             key: 'value',
             backgroundColor: function(ctx) {
@@ -1622,6 +1667,7 @@ Timestamp,BD1_DB1_BD6,BD1_DB2_UTILITIES,BD1_DB4_COATING
           }]
         },
         options: {
+          devicePixelRatio: window.devicePixelRatio || 1,
           maintainAspectRatio: false,
           plugins: {
             legend: { display: false },
@@ -1636,6 +1682,9 @@ Timestamp,BD1_DB1_BD6,BD1_DB2_UTILITIES,BD1_DB4_COATING
                 }
               }
             }
+          },
+          animation: {
+            duration: 500, // Reduced
           }
         }
       });
@@ -1659,7 +1708,7 @@ Timestamp,BD1_DB1_BD6,BD1_DB2_UTILITIES,BD1_DB4_COATING
       } else {
         treeMapWrapper.style.display = 'none';
         treeMapHeader.style.display = 'none';
-        treeMapButton.innerHTML = '<i class="fas fa-sitemap"></i> Allocation Tree Map';
+        treeMapButton.innerHTML = '<i class="fas fa-sitemap"></i> Power Usage Share';
         switchUnitButton.style.display = 'none';
         if (isKWhMode) {
           isKWhMode = false;
@@ -1744,18 +1793,24 @@ Timestamp,BD1_DB1_BD6,BD1_DB2_UTILITIES,BD1_DB4_COATING
       document.querySelectorAll('input[type="checkbox"]').forEach((cb, index) => {
         if (cb.checked) activeColumns.push(index + 1);
       });
+      if (activeColumns.length <= 1) {
+        showErrorModal('No meters selected for export.');
+        return;
+      }
 
-      const kWhData = calculateKWh(rawData);
+      // For kWh mode, approximate single value per meter (daily avg)
       let csvContent = rawData.headers.filter((_, i) => activeColumns.includes(i)).join(',') + '\n';
       rawData.data.forEach((row, rowIndex) => {
-        const rowData = row.map((value, colIndex) => {
-          if (colIndex === 0) return value;
-          if (activeColumns.includes(colIndex)) {
-            return isTreeMapVisible && isKWhMode ? kWhData[colIndex - 1] : value;
+        const rowData = activeColumns.map(col => {
+          if (col === 0) return row[0]; // Timestamp
+          const meterIdx = col - 1;
+          const header = rawData.headers[col];
+          if (isTreeMapVisible && isKWhMode) {
+            return kWhCache[header] || '0'; // Use cached daily kWh
           }
-          return value;
+          return row[col] || '0';
         });
-        csvContent += rowData.filter((_, i) => activeColumns.includes(i)).join(',') + '\n';
+        csvContent += rowData.join(',') + '\n';
       });
 
       const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
@@ -1812,7 +1867,25 @@ Timestamp,BD1_DB1_BD6,BD1_DB2_UTILITIES,BD1_DB4_COATING
 
     function startAutoRefresh() {
       if (refreshInterval) clearInterval(refreshInterval);
-      refreshInterval = setInterval(loadData, 15 * 60 * 1000);
+      let isTabVisible = true;
+      document.addEventListener('visibilitychange', () => {
+        isTabVisible = !document.hidden;
+        if (isTabVisible) {
+          // Resume refresh if needed
+        } else {
+          // Pause: clear interval if hidden
+          if (refreshInterval) {
+            clearInterval(refreshInterval);
+            refreshInterval = null;
+          }
+        }
+      });
+      function refreshIfVisible() {
+        if (isTabVisible) {
+          loadData();
+        }
+      }
+      refreshInterval = setInterval(refreshIfVisible, 15 * 60 * 1000);
     }
 
     document.addEventListener('DOMContentLoaded', () => {
