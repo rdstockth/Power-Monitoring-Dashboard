@@ -6,8 +6,8 @@
   <title>Energy Monitoring Dashboard</title>
 
   <!-- Font Awesome with lazy load -->
-  <link rel="preload" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.1/css/all.min.css" as="style" onload="this.onload=null;this.rel='stylesheet'">
-  <noscript><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.1/css/all.min.css"></noscript>
+  <link rel="preload" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.1.0/css/all.min.css" as="style" onload="this.onload=null;this.rel='stylesheet'">
+  <noscript><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.1.0/css/all.min.css"></noscript>
 
   <!-- Preload Chart.js -->
   <link rel="preload" href="https://cdn.jsdelivr.net/npm/chart.js" as="script" crossorigin>
@@ -1183,7 +1183,7 @@ Timestamp,BD1_DB1_BD6,BD1_DB2_UTILITIES,BD1_DB4_COATING
       const isCurrentMonth = (year === currentDate.getFullYear() && mon === currentDate.getMonth() + 1);
       let warning = '';
       if (isCurrentMonth && currentDate.getDate() < lastDay) {
-        warning = 'ข้อมูลยังไม่เต็มเดือน';
+        warning = 'The data is not for a full month';
       }
       document.getElementById('mainWarning').textContent = warning;
       const tempData = [];
@@ -1228,7 +1228,7 @@ Timestamp,BD1_DB1_BD6,BD1_DB2_UTILITIES,BD1_DB4_COATING
       const isCurrentMonth = (year === currentDate.getFullYear() && mon === currentDate.getMonth() + 1);
       let warning = '';
       if (isCurrentMonth && currentDate.getDate() < lastDay) {
-        warning = 'ข้อมูลยังไม่เต็มเดือน';
+        warning = 'The data is not for a full month';
       }
       document.getElementById('otherWarning').textContent = warning;
 
