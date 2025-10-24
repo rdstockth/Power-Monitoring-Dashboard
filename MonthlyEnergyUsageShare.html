@@ -244,11 +244,21 @@
       color: white;
       box-shadow: 0 5px 20px rgba(155, 89, 182, 0.3);
     }
-    .btn:hover, .btn-tree-map:hover, .btn-warning:hover {
+    .btn-minimal {
+      background: #e0e0e0;
+      color: #333;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+      padding: 8px 16px;
+      font-size: 14px;
+      text-transform: none;
+      letter-spacing: 0;
+      min-width: auto;
+    }
+    .btn:hover, .btn-tree-map:hover, .btn-warning:hover, .btn-minimal:hover {
       transform: translateY(-3px);
       box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
     }
-    .btn:active, .btn-tree-map:active, .btn-warning:active {
+    .btn:active, .btn-tree-map:active, .btn-warning:active, .btn-minimal:active {
       transform: translateY(-1px);
     }
     .chart-container {
@@ -260,6 +270,23 @@
       text-align: center;
       margin-bottom: -15px;
       padding: 10px 0;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 20px;
+    }
+    #otherTreeMapHeader {
+      justify-content: space-between;
+      align-items: center;
+    }
+    #otherTreeMapHeader .title-wrapper {
+      flex: 1;
+      align-items: center;
+    }
+    .title-wrapper {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
     }
     .chart-title {
       font-size: 1.8em;
@@ -630,7 +657,7 @@
     </div>
     <div class="controls">
       <div class="date-controls">
-<div class="control-group">
+        <div class="control-group">
           <label>Select Month:</label>
           <select id="monthSelect" aria-label="Select month for tree map"></select>
         </div>
@@ -650,6 +677,9 @@
         <button class="btn btn-warning" onclick="openCompareModal()" aria-label="Compare months energy usage">
           <i class="fas fa-chart-line"></i> Compare Months
         </button>
+        <button id="chartToggleBtn" class="btn btn-tree-map" onclick="toggleChartType()" aria-label="Switch between Tree Map and Pie Chart">
+          <i class="fas fa-exchange-alt"></i> Switch to Pie Chart
+        </button>
       </div>
     </div>
     <div class="chart-container">
@@ -661,8 +691,13 @@
         <canvas id="mainTreeMapChart"></canvas>
       </div>
       <div class="chart-header" id="otherTreeMapHeader">
-        <div class="chart-title"><i class="fas fa-sitemap"></i> Cost Center Monthly Share</div>
-        <div id="otherWarning" style="color: red; text-align: center;"></div>
+        <div class="title-wrapper">
+          <div class="chart-title"><i class="fas fa-sitemap"></i> Cost Center Monthly Share</div>
+          <div id="otherWarning" style="color: red; text-align: center;"></div>
+        </div>
+        <button id="allocateBtn" class="btn btn-minimal" onclick="toggleAllocateFacility()" aria-label="Allocate Facility to Cost Centers">
+          Allocate
+        </button>
       </div>
       <div class="chart-wrapper" id="otherTreeMapWrapper">
         <canvas id="otherTreeMapChart"></canvas>
@@ -713,6 +748,8 @@
     let allDatasets = [];
     let filteredData = null;
     let refreshInterval = null;
+    let allocateFacility = false;
+    let chartType = 'treemap'; // 'treemap' or 'pie'
     const currentDate = new Date(2025, 9, 1); // October 1, 2025
     const colors = [
   '#FF4757', '#FF6B35', '#F8B500', '#18b56e', '#8BC34A',
@@ -1163,6 +1200,181 @@ Timestamp,BD1_DB1_BD6,BD1_DB2_UTILITIES,BD1_DB4_COATING
       });
     }
 
+    function createPieChart(ctx, tempData, total, chartLabel) {
+      if (!ctx) return null;
+
+      let otherSum = 0;
+      const pieTempData = [];
+      tempData.forEach(item => {
+        const percent = (item.value / total) * 100;
+        if (percent < 1) {
+          otherSum += item.value;
+        } else {
+          pieTempData.push(item);
+        }
+      });
+
+      if (otherSum > 0) {
+        const otherPercent = (otherSum / total) * 100;
+        pieTempData.push({
+          label: 'Other',
+          value: otherSum,
+          color: '#999999',
+          percent: otherPercent.toFixed(1)
+        });
+      }
+
+      // Sort by value descending for better visual hierarchy
+      pieTempData.sort((a, b) => b.value - a.value);
+
+      const pieData = pieTempData.map(item => item.value);
+      const pieLabels = pieTempData.map(item => item.label);
+      const pieColors = pieTempData.map(item => item.color);
+
+      return new Chart(ctx, {
+        type: 'pie',
+        data: {
+          labels: pieLabels,
+          datasets: [{
+            label: chartLabel,
+            data: pieData,
+            backgroundColor: pieColors,
+            borderColor: '#fff',
+            borderWidth: 1,
+            hoverBorderWidth: 2,
+            hoverOffset: 8
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          layout: {
+            padding: {
+              top: 50,
+              bottom: 50,
+              left: 50,
+              right: 50
+            }
+          },
+          plugins: {
+            legend: {
+              display: false
+            },
+            tooltip: {
+              enabled: true,
+              backgroundColor: 'rgba(255, 255, 255, 0.95)',
+              titleColor: '#333',
+              bodyColor: '#666',
+              borderColor: '#ddd',
+              borderWidth: 1,
+              titleFont: {
+                size: 14,
+                weight: 'bold'
+              },
+              bodyFont: {
+                size: 13
+              },
+              padding: 12,
+              cornerRadius: 8,
+              displayColors: true,
+              callbacks: {
+                title: function(ctx) {
+                  return ctx[0].label;
+                },
+                label: function(ctx) {
+                  const value = ctx.parsed;
+                  const percent = ((value / total) * 100).toFixed(1);
+                  return [
+                    `Value: ${formatNumber(value)} kWh`,
+                    `Percentage: ${percent}%`
+                  ];
+                },
+                footer: function(ctx) {
+                  return `Total: ${formatNumber(total)} kWh`;
+                }
+              }
+            },
+            datalabels: {
+              display: false
+            }
+          }
+        },
+        plugins: [{
+          id: 'externalLabels',
+          afterDatasetsDraw: function(chart) {
+            const ctx = chart.ctx;
+            const chartArea = chart.chartArea;
+            const centerX = (chartArea.left + chartArea.right) / 2;
+            const centerY = (chartArea.top + chartArea.bottom) / 2;
+            const radius = Math.min(chartArea.right - chartArea.left, chartArea.bottom - chartArea.top) / 2;
+            
+            chart.data.datasets.forEach((dataset, datasetIndex) => {
+              const meta = chart.getDatasetMeta(datasetIndex);
+              let totalValue = 0;
+              dataset.data.forEach(val => totalValue += val);
+              
+              let currentAngle = -Math.PI / 2; // Start from top
+              
+              meta.data.forEach((element, index) => {
+                const value = dataset.data[index];
+                const percent = ((value / totalValue) * 100).toFixed(1);
+                const angle = (value / totalValue) * 2 * Math.PI;
+                const midAngle = currentAngle + angle / 2;
+                
+                // Only show labels for segments > 1.5%
+                if (parseFloat(percent) > 1.5) {
+                  const label = chart.data.labels[index];
+                  const formattedPercent = `${percent}%`;
+                  
+                  // Calculate label position (outside the pie)
+                  const labelRadius = radius * 1.18;
+                  const labelX = centerX + Math.cos(midAngle) * labelRadius;
+                  const labelY = centerY + Math.sin(midAngle) * labelRadius;
+                  
+                  // Draw connecting line
+                  const lineStartRadius = radius * 1.05;
+                  const lineStartX = centerX + Math.cos(midAngle) * lineStartRadius;
+                  const lineStartY = centerY + Math.sin(midAngle) * lineStartRadius;
+                  
+                  const lineEndRadius = radius * 1.12;
+                  const lineEndX = centerX + Math.cos(midAngle) * lineEndRadius;
+                  const lineEndY = centerY + Math.sin(midAngle) * lineEndRadius;
+                  
+                  ctx.beginPath();
+                  ctx.strokeStyle = dataset.backgroundColor[index];
+                  ctx.lineWidth = 1.5;
+                  ctx.moveTo(lineStartX, lineStartY);
+                  ctx.lineTo(lineEndX, lineEndY);
+                  
+                  // Extend line horizontally
+                  const extendLength = 12;
+                  const extendX = lineEndX + (Math.cos(midAngle) > 0 ? extendLength : -extendLength);
+                  ctx.lineTo(extendX, lineEndY);
+                  ctx.stroke();
+                  
+                  // Draw label text
+                  ctx.fillStyle = '#333';
+                  ctx.font = 'bold 11px Inter, sans-serif';
+                  ctx.textBaseline = 'middle';
+                  
+                  // Align text based on position
+                  if (Math.cos(midAngle) > 0) {
+                    ctx.textAlign = 'left';
+                    ctx.fillText(`${label}, ${formattedPercent}`, extendX + 5, lineEndY);
+                  } else {
+                    ctx.textAlign = 'right';
+                    ctx.fillText(`${label}, ${formattedPercent}`, extendX - 5, lineEndY);
+                  }
+                }
+                
+                currentAngle += angle;
+              });
+            });
+          }
+        }]
+      });
+    }
+
     function createMainTreeMap() {
       const ctx = document.getElementById('mainTreeMapChart')?.getContext('2d');
       destroyChart(mainTreeMapInstance, 'Main TreeMap');
@@ -1205,7 +1417,11 @@ Timestamp,BD1_DB1_BD6,BD1_DB2_UTILITIES,BD1_DB4_COATING
         return;
       }
 
-      mainTreeMapInstance = createTreeMapChart(ctx, tempData, total, 'Main Transformers Monthly Allocation Tree Map');
+      if (chartType === 'treemap') {
+        mainTreeMapInstance = createTreeMapChart(ctx, tempData, total, 'Main Transformers Monthly Allocation Tree Map');
+      } else {
+        mainTreeMapInstance = createPieChart(ctx, tempData, total, 'Main Transformers Monthly Allocation Pie Chart');
+      }
     }
 
     function createOtherTreeMap() {
@@ -1278,6 +1494,21 @@ Timestamp,BD1_DB1_BD6,BD1_DB2_UTILITIES,BD1_DB4_COATING
       groupToValue[facilityKey] = (groupToValue[facilityKey] || 0) + facilityValue;
       groupToSection[facilityKey] = 'Facility';
 
+      // Allocate Facility if toggled
+      if (allocateFacility) {
+        const facilityValueToAlloc = groupToValue[facilityKey] || 0;
+        delete groupToValue[facilityKey];
+        let sumNonFacility = 0;
+        for (const v of Object.values(groupToValue)) {
+          sumNonFacility += v;
+        }
+        if (sumNonFacility > 0) {
+          for (const group in groupToValue) {
+            groupToValue[group] += (groupToValue[group] / sumNonFacility) * facilityValueToAlloc;
+          }
+        }
+      }
+
       const totalForChart = sumMain;
 
       if (totalForChart === 0) {
@@ -1297,7 +1528,34 @@ Timestamp,BD1_DB1_BD6,BD1_DB2_UTILITIES,BD1_DB4_COATING
         index++;
       }
 
-      otherTreeMapInstance = createTreeMapChart(ctx, tempData, totalForChart, 'Other Meters Monthly Allocation Tree Map');
+      if (chartType === 'treemap') {
+        otherTreeMapInstance = createTreeMapChart(ctx, tempData, totalForChart, 'Other Meters Monthly Allocation Tree Map');
+      } else {
+        otherTreeMapInstance = createPieChart(ctx, tempData, totalForChart, 'Other Meters Monthly Allocation Pie Chart');
+      }
+    }
+
+    function toggleChartType() {
+      chartType = chartType === 'treemap' ? 'pie' : 'treemap';
+      const btn = document.getElementById('chartToggleBtn');
+      if (chartType === 'pie') {
+        btn.innerHTML = '<i class="fas fa-exchange-alt"></i> Switch to Tree Map';
+      } else {
+        btn.innerHTML = '<i class="fas fa-exchange-alt"></i> Switch to Pie Chart';
+      }
+      createMainTreeMap();
+      createOtherTreeMap();
+    }
+
+    function toggleAllocateFacility() {
+      allocateFacility = !allocateFacility;
+      const btn = document.getElementById('allocateBtn');
+      if (allocateFacility) {
+        btn.innerHTML = 'Reset';
+      } else {
+        btn.innerHTML = 'Allocate';
+      }
+      createOtherTreeMap();
     }
 
     function exportCSV() {
@@ -1612,4 +1870,3 @@ Timestamp,BD1_DB1_BD6,BD1_DB2_UTILITIES,BD1_DB4_COATING
   </script>
 </body>
 </html>
-
