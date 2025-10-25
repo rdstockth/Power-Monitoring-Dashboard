@@ -726,10 +726,10 @@
               <option value="main">Main Transformers</option>
               <option value="cost">Cost Center Group</option>
             </select>
+            <button id="compareAllocateBtn" class="btn btn-minimal" onclick="toggleCompareAllocate()" style="display: none; margin-top: 10px;">Allocate</button>
           </div>
         </div>
-        <button class="btn btn-success" onclick="updateCompareChart()" style="width: 100%; margin-bottom: 20px;">Update Chart</button>
-        <div class="compare-chart-wrapper">
+         <div class="compare-chart-wrapper">
           <canvas id="compareChart"></canvas>
         </div>
         <div class="stats-grid" id="statsGrid"></div>
@@ -747,6 +747,7 @@
     let filteredData = null;
     let refreshInterval = null;
     let allocateFacility = false;
+    let compareAllocate = false;
     let chartType = 'treemap'; // 'treemap' or 'pie'
     const currentDate = new Date(2025, 9, 1); // October 1, 2025
     const colors = [
@@ -1586,6 +1587,13 @@ Timestamp,BD1_DB1_BD6,BD1_DB2_UTILITIES,BD1_DB4_COATING
       createOtherTreeMap();
     }
 
+    function toggleCompareAllocate() {
+      compareAllocate = !compareAllocate;
+      const btn = document.getElementById('compareAllocateBtn');
+      btn.innerHTML = compareAllocate ? 'Reset' : 'Allocate';
+      updateCompareChart();
+    }
+
    function exportCSV() {
   if (!monthlyData || !rawData) {
     showErrorModal('No data available to export.');
@@ -1752,6 +1760,8 @@ Timestamp,BD1_DB1_BD6,BD1_DB2_UTILITIES,BD1_DB4_COATING
       const modal = document.getElementById('compareModal');
       const month1Select = document.getElementById('month1Select');
       const month2Select = document.getElementById('month2Select');
+      const groupSelect = document.getElementById('groupSelect');
+      const allocateBtn = document.getElementById('compareAllocateBtn');
       month1Select.innerHTML = '';
       month2Select.innerHTML = '';
       monthlyData.labels.forEach((month, index) => {
@@ -1762,8 +1772,23 @@ Timestamp,BD1_DB1_BD6,BD1_DB2_UTILITIES,BD1_DB4_COATING
       });
       month1Select.value = monthlyData.labels.length - 2; // Previous month
       month2Select.value = monthlyData.labels.length - 1; // Latest month
+      allocateBtn.style.display = groupSelect.value === 'cost' ? 'block' : 'none';
+      allocateBtn.innerHTML = 'Allocate';
+      compareAllocate = false;
       modal.style.display = 'block';
       updateCompareChart();
+
+      // Add event listeners for auto-update
+      month1Select.addEventListener('change', updateCompareChart);
+      month2Select.addEventListener('change', updateCompareChart);
+      groupSelect.addEventListener('change', function() {
+        allocateBtn.style.display = this.value === 'cost' ? 'block' : 'none';
+        if (this.value !== 'cost') {
+          compareAllocate = false;
+          allocateBtn.innerHTML = 'Allocate';
+        }
+        updateCompareChart();
+      });
     }
 
     function closeCompareModal() {
@@ -1803,6 +1828,7 @@ Timestamp,BD1_DB1_BD6,BD1_DB2_UTILITIES,BD1_DB4_COATING
       } else { // cost
         const groupToValue1 = {};
         const groupToValue2 = {};
+        const groupToSection = {};
         let sum11111_1 = 0;
         let sum11111_2 = 0;
         allDatasets.forEach((dataset) => {
@@ -1822,6 +1848,7 @@ Timestamp,BD1_DB1_BD6,BD1_DB2_UTILITIES,BD1_DB4_COATING
           const groupKey = cost;
           groupToValue1[groupKey] = (groupToValue1[groupKey] || 0) + val1;
           groupToValue2[groupKey] = (groupToValue2[groupKey] || 0) + val2;
+          if (!groupToSection[groupKey]) groupToSection[groupKey] = section;
         });
         if (groupToValue1['11460']) {
           groupToValue1['11460'] = Math.max(0, groupToValue1['11460'] - sum11111_1);
@@ -1858,13 +1885,41 @@ Timestamp,BD1_DB1_BD6,BD1_DB2_UTILITIES,BD1_DB4_COATING
         const facilityKey = '11203';
         groupToValue1[facilityKey] = (groupToValue1[facilityKey] || 0) + facilityValue1;
         groupToValue2[facilityKey] = (groupToValue2[facilityKey] || 0) + facilityValue2;
+        groupToSection[facilityKey] = 'Facility';
+
+        // Allocate Facility if toggled
+        if (compareAllocate) {
+          const facilityValueToAlloc1 = groupToValue1[facilityKey] || 0;
+          delete groupToValue1[facilityKey];
+          let sumNonFacility1 = 0;
+          for (const v of Object.values(groupToValue1)) {
+            sumNonFacility1 += v;
+          }
+          if (sumNonFacility1 > 0) {
+            for (const group in groupToValue1) {
+              groupToValue1[group] += (groupToValue1[group] / sumNonFacility1) * facilityValueToAlloc1;
+            }
+          }
+
+          const facilityValueToAlloc2 = groupToValue2[facilityKey] || 0;
+          delete groupToValue2[facilityKey];
+          let sumNonFacility2 = 0;
+          for (const v of Object.values(groupToValue2)) {
+            sumNonFacility2 += v;
+          }
+          if (sumNonFacility2 > 0) {
+            for (const group in groupToValue2) {
+              groupToValue2[group] += (groupToValue2[group] / sumNonFacility2) * facilityValueToAlloc2;
+            }
+          }
+        }
 
         const allGroups = [...new Set([...Object.keys(groupToValue1), ...Object.keys(groupToValue2)])];
         allGroups.forEach(groupKey => {
           const val1 = groupToValue1[groupKey] || 0;
           const val2 = groupToValue2[groupKey] || 0;
           if (val1 <= 0 && val2 <= 0) return;
-          const section = groupKey === '11203' ? 'Facility' : (meterToSection[Object.keys(meterToCost).find(k => meterToCost[k] === groupKey)] || '');
+          const section = groupToSection[groupKey] || '';
           const name = /^\d+$/.test(groupKey) ? `${groupKey} - ${section}` : groupKey;
           labels.push(name);
           data1.push(val1);
