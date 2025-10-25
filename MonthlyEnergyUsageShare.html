@@ -1,5 +1,4 @@
-<!DOCTYPE html>
-<html lang="en">
+<!DOCTYPE html><html lang="en">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
@@ -666,44 +665,43 @@
           <select id="yearSelect" aria-label="Select year for tree map"></select>
         </div>
         
-      </div>
-      <div class="action-buttons">
-        <button class="btn btn-success" onclick="exportCSV()" aria-label="Export selected data to CSV file">
-          <i class="fas fa-file-csv"></i> Export CSV
-        </button>
-        <button class="btn btn-info" onclick="exportPNG()" aria-label="Export charts to PNG images">
-          <i class="fas fa-image"></i> Export Image
-        </button>
-        <button class="btn btn-warning" onclick="openCompareModal()" aria-label="Compare months energy usage">
-          <i class="fas fa-chart-line"></i> Compare Months
-        </button>
-        <button id="chartToggleBtn" class="btn btn-tree-map" onclick="toggleChartType()" aria-label="Switch between Tree Map and Pie Chart">
-          <i class="fas fa-exchange-alt"></i> Switch to Pie Chart
-        </button>
-      </div>
-    </div>
-    <div class="chart-container">
-      <div class="chart-header" id="mainTreeMapHeader">
-        <div class="chart-title"><i class="fas fa-sitemap"></i> Main Transformers Monthly Share</div>
-        <div id="mainWarning" style="color: red; text-align: center;"></div>
-      </div>
-      <div class="chart-wrapper" id="mainTreeMapWrapper">
-        <canvas id="mainTreeMapChart"></canvas>
-      </div>
-      <div class="chart-header" id="otherTreeMapHeader">
-        <div class="title-wrapper">
-          <div class="chart-title"><i class="fas fa-sitemap"></i> Cost Center Monthly Share</div>
-          <div id="otherWarning" style="color: red; text-align: center;"></div>
-        </div>
-        <button id="allocateBtn" class="btn btn-minimal" onclick="toggleAllocateFacility()" aria-label="Allocate Facility to Cost Centers">
-          Allocate
-        </button>
-      </div>
-      <div class="chart-wrapper" id="otherTreeMapWrapper">
-        <canvas id="otherTreeMapChart"></canvas>
-      </div>
-    </div>
   </div>
+  <div class="action-buttons">
+    <button class="btn btn-success" onclick="exportCSV()" aria-label="Export selected data to CSV file">
+      <i class="fas fa-file-csv"></i> Export CSV
+    </button>
+    <button class="btn btn-info" onclick="exportPNG()" aria-label="Export charts to PNG images">
+      <i class="fas fa-image"></i> Export Image
+    </button>
+    <button class="btn btn-warning" onclick="openCompareModal()" aria-label="Compare months energy usage">
+      <i class="fas fa-chart-line"></i> Compare Months
+    </button>
+    <button id="chartToggleBtn" class="btn btn-tree-map" onclick="toggleChartType()" aria-label="Switch between Tree Map and Pie Chart">
+      <i class="fas fa-exchange-alt"></i> Switch to Pie Chart
+    </button>
+  </div>
+</div>
+<div class="chart-container">
+  <div class="chart-header" id="mainTreeMapHeader">
+    <div class="chart-title"><i class="fas fa-sitemap"></i> Main Transformers Monthly Share</div>
+    <div id="mainWarning" style="color: red; text-align: center;"></div>
+  </div>
+  <div class="chart-wrapper" id="mainTreeMapWrapper">
+    <canvas id="mainTreeMapChart"></canvas>
+  </div>
+  <div class="chart-header" id="otherTreeMapHeader">
+    <div class="title-wrapper">
+      <div class="chart-title"><i class="fas fa-sitemap"></i> Cost Center Monthly Share</div>
+      <div id="otherWarning" style="color: red; text-align: center;"></div>
+    </div>
+    <button id="allocateBtn" class="btn btn-minimal" onclick="toggleAllocateFacility()" aria-label="Allocate Facility to Cost Centers">
+      Allocate
+    </button>
+  </div>
+  <div class="chart-wrapper" id="otherTreeMapWrapper">
+    <canvas id="otherTreeMapChart"></canvas>
+  </div>
+</div>  </div>
 
   <!-- Compare Modal -->
   <div id="compareModal" class="modal">
@@ -1201,180 +1199,210 @@ Timestamp,BD1_DB1_BD6,BD1_DB2_UTILITIES,BD1_DB4_COATING
     }
 
     function createPieChart(ctx, tempData, total, chartLabel) {
-      if (!ctx) return null;
+  if (!ctx) return null;
 
-      let otherSum = 0;
-      const pieTempData = [];
-      tempData.forEach(item => {
-        const percent = (item.value / total) * 100;
-        if (percent < 1) {
-          otherSum += item.value;
-        } else {
-          pieTempData.push(item);
+  let otherSum = 0;
+  const pieTempData = [];
+  tempData.forEach(item => {
+    const percent = (item.value / total) * 100;
+    if (percent < 1) {
+      otherSum += item.value;
+    } else {
+      pieTempData.push(item);
+    }
+  });
+
+  if (otherSum > 0) {
+    const otherPercent = (otherSum / total) * 100;
+    pieTempData.push({
+      label: 'Other',
+      value: otherSum,
+      color: '#999999',
+      percent: otherPercent.toFixed(1)
+    });
+  }
+
+  // Sort by value descending for better visual hierarchy
+  pieTempData.sort((a, b) => b.value - a.value);
+
+  const pieData = pieTempData.map(item => item.value);
+  const pieLabels = pieTempData.map(item => {
+    const percent = ((item.value / total) * 100).toFixed(1);
+    return `${item.label} (${percent}%)`; // Include percentage in label
+  });
+  const pieColors = pieTempData.map(item => item.color);
+
+  return new Chart(ctx, {
+    type: 'pie',
+    data: {
+      labels: pieLabels,
+      datasets: [{
+        label: chartLabel,
+        data: pieData,
+        backgroundColor: pieColors,
+        borderColor: '#fff',
+        borderWidth: 1,
+        hoverBorderWidth: 2,
+        hoverOffset: 8
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      layout: {
+        padding: {
+          top: 50,
+          bottom: 50,
+          left: 50,
+          right: 50
         }
-      });
+      },
+      plugins: {
+        legend: {
+          display: true,
+          position: 'right',
+          labels: {
+            font: {
+              size: 12,
+              family: 'Inter, sans-serif'
+            },
+            padding: 15,
+            usePointStyle: true,
+            boxWidth: 10,
+            generateLabels: function(chart) {
+              const data = chart.data;
+              if (data.labels.length && data.datasets.length) {
+                return data.labels.map((label, i) => {
+                  const meta = chart.getDatasetMeta(0);
+                  const style = meta.controller.getStyle(i);
+                  return {
+                    text: label, // Already includes percentage
+                    fillStyle: style.backgroundColor,
+                    strokeStyle: style.borderColor,
+                    lineWidth: style.borderWidth,
+                    hidden: !chart.getDataVisibility(i),
+                    index: i
+                  };
+                });
+              }
+              return [];
+            }
+          }
+        },
+        tooltip: {
+          enabled: true,
+          backgroundColor: 'rgba(255, 255, 255, 0.95)',
+          titleColor: '#333',
+          bodyColor: '#666',
+          borderColor: '#ddd',
+          borderWidth: 1,
+          titleFont: {
+            size: 14,
+            weight: 'bold'
+          },
+          bodyFont: {
+            size: 13
+          },
+          padding: 12,
+          cornerRadius: 8,
+          displayColors: true,
+          callbacks: {
+            title: function(ctx) {
+              return ctx[0].label.split(' (')[0]; // Remove percentage for tooltip title
+            },
+            label: function(ctx) {
+              const value = ctx.parsed;
+              const percent = ((value / total) * 100).toFixed(1);
+              return [
+                `Value: ${formatNumber(value)} kWh`,
+                `Percentage: ${percent}%`
+              ];
+            },
+            footer: function(ctx) {
+              return `Total: ${formatNumber(total)} kWh`;
+            }
+          }
+        },
+        datalabels: {
+          display: false
+        }
+      }
+    },
+    plugins: [{
+      id: 'externalLabels',
+      afterDatasetsDraw: function(chart) {
+        const ctx = chart.ctx;
+        const chartArea = chart.chartArea;
+        const centerX = (chartArea.left + chartArea.right) / 2;
+        const centerY = (chartArea.top + chartArea.bottom) / 2;
+        const radius = Math.min(chartArea.right - chartArea.left, chartArea.bottom - chartArea.top) / 2;
 
-      if (otherSum > 0) {
-        const otherPercent = (otherSum / total) * 100;
-        pieTempData.push({
-          label: 'Other',
-          value: otherSum,
-          color: '#999999',
-          percent: otherPercent.toFixed(1)
+        chart.data.datasets.forEach((dataset, datasetIndex) => {
+          const meta = chart.getDatasetMeta(datasetIndex);
+          let totalValue = 0;
+          dataset.data.forEach(val => totalValue += val);
+
+          let currentAngle = -Math.PI / 2; // Start from top
+
+          meta.data.forEach((element, index) => {
+            const value = dataset.data[index];
+            const percent = ((value / totalValue) * 100).toFixed(1);
+            const angle = (value / totalValue) * 2 * Math.PI;
+            const midAngle = currentAngle + angle / 2;
+
+            // Only show labels for segments > 2.0%
+            if (parseFloat(percent) > 2.0) {
+              const label = chart.data.labels[index].split(' (')[0]; // Remove percentage
+              const formattedPercent = `${percent}%`;
+
+              // Calculate label position (outside the pie)
+              const labelRadius = radius * 1.18;
+              const labelX = centerX + Math.cos(midAngle) * labelRadius;
+              const labelY = centerY + Math.sin(midAngle) * labelRadius;
+
+              // Draw connecting line
+              const lineStartRadius = radius * 1.05;
+              const lineStartX = centerX + Math.cos(midAngle) * lineStartRadius;
+              const lineStartY = centerY + Math.sin(midAngle) * lineStartRadius;
+
+              const lineEndRadius = radius * 1.12;
+              const lineEndX = centerX + Math.cos(midAngle) * lineEndRadius;
+              const lineEndY = centerY + Math.sin(midAngle) * lineEndRadius;
+
+              ctx.beginPath();
+              ctx.strokeStyle = dataset.backgroundColor[index];
+              ctx.lineWidth = 1.5;
+              ctx.moveTo(lineStartX, lineStartY);
+              ctx.lineTo(lineEndX, lineEndY);
+
+              // Extend line horizontally
+              const extendLength = 12;
+              const extendX = lineEndX + (Math.cos(midAngle) > 0 ? extendLength : -extendLength);
+              ctx.lineTo(extendX, lineEndY);
+              ctx.stroke();
+
+              // Draw label text
+              ctx.fillStyle = '#333';
+              ctx.font = 'bold 11px Inter, sans-serif';
+              ctx.textBaseline = 'middle';
+
+              // Align text based on position
+              if (Math.cos(midAngle) > 0) {
+                ctx.textAlign = 'left';
+                ctx.fillText(`${label}, ${formattedPercent}`, extendX + 5, lineEndY);
+              } else {
+                ctx.textAlign = 'right';
+                ctx.fillText(`${label}, ${formattedPercent}`, extendX - 5, lineEndY);
+              }
+            }
+
+            currentAngle += angle;
+          });
         });
       }
-
-      // Sort by value descending for better visual hierarchy
-      pieTempData.sort((a, b) => b.value - a.value);
-
-      const pieData = pieTempData.map(item => item.value);
-      const pieLabels = pieTempData.map(item => item.label);
-      const pieColors = pieTempData.map(item => item.color);
-
-      return new Chart(ctx, {
-        type: 'pie',
-        data: {
-          labels: pieLabels,
-          datasets: [{
-            label: chartLabel,
-            data: pieData,
-            backgroundColor: pieColors,
-            borderColor: '#fff',
-            borderWidth: 1,
-            hoverBorderWidth: 2,
-            hoverOffset: 8
-          }]
-        },
-        options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          layout: {
-            padding: {
-              top: 50,
-              bottom: 50,
-              left: 50,
-              right: 50
-            }
-          },
-          plugins: {
-            legend: {
-              display: false
-            },
-            tooltip: {
-              enabled: true,
-              backgroundColor: 'rgba(255, 255, 255, 0.95)',
-              titleColor: '#333',
-              bodyColor: '#666',
-              borderColor: '#ddd',
-              borderWidth: 1,
-              titleFont: {
-                size: 14,
-                weight: 'bold'
-              },
-              bodyFont: {
-                size: 13
-              },
-              padding: 12,
-              cornerRadius: 8,
-              displayColors: true,
-              callbacks: {
-                title: function(ctx) {
-                  return ctx[0].label;
-                },
-                label: function(ctx) {
-                  const value = ctx.parsed;
-                  const percent = ((value / total) * 100).toFixed(1);
-                  return [
-                    `Value: ${formatNumber(value)} kWh`,
-                    `Percentage: ${percent}%`
-                  ];
-                },
-                footer: function(ctx) {
-                  return `Total: ${formatNumber(total)} kWh`;
-                }
-              }
-            },
-            datalabels: {
-              display: false
-            }
-          }
-        },
-        plugins: [{
-          id: 'externalLabels',
-          afterDatasetsDraw: function(chart) {
-            const ctx = chart.ctx;
-            const chartArea = chart.chartArea;
-            const centerX = (chartArea.left + chartArea.right) / 2;
-            const centerY = (chartArea.top + chartArea.bottom) / 2;
-            const radius = Math.min(chartArea.right - chartArea.left, chartArea.bottom - chartArea.top) / 2;
-            
-            chart.data.datasets.forEach((dataset, datasetIndex) => {
-              const meta = chart.getDatasetMeta(datasetIndex);
-              let totalValue = 0;
-              dataset.data.forEach(val => totalValue += val);
-              
-              let currentAngle = -Math.PI / 2; // Start from top
-              
-              meta.data.forEach((element, index) => {
-                const value = dataset.data[index];
-                const percent = ((value / totalValue) * 100).toFixed(1);
-                const angle = (value / totalValue) * 2 * Math.PI;
-                const midAngle = currentAngle + angle / 2;
-                
-                // Only show labels for segments > 1.5%
-                if (parseFloat(percent) > 1.5) {
-                  const label = chart.data.labels[index];
-                  const formattedPercent = `${percent}%`;
-                  
-                  // Calculate label position (outside the pie)
-                  const labelRadius = radius * 1.18;
-                  const labelX = centerX + Math.cos(midAngle) * labelRadius;
-                  const labelY = centerY + Math.sin(midAngle) * labelRadius;
-                  
-                  // Draw connecting line
-                  const lineStartRadius = radius * 1.05;
-                  const lineStartX = centerX + Math.cos(midAngle) * lineStartRadius;
-                  const lineStartY = centerY + Math.sin(midAngle) * lineStartRadius;
-                  
-                  const lineEndRadius = radius * 1.12;
-                  const lineEndX = centerX + Math.cos(midAngle) * lineEndRadius;
-                  const lineEndY = centerY + Math.sin(midAngle) * lineEndRadius;
-                  
-                  ctx.beginPath();
-                  ctx.strokeStyle = dataset.backgroundColor[index];
-                  ctx.lineWidth = 1.5;
-                  ctx.moveTo(lineStartX, lineStartY);
-                  ctx.lineTo(lineEndX, lineEndY);
-                  
-                  // Extend line horizontally
-                  const extendLength = 12;
-                  const extendX = lineEndX + (Math.cos(midAngle) > 0 ? extendLength : -extendLength);
-                  ctx.lineTo(extendX, lineEndY);
-                  ctx.stroke();
-                  
-                  // Draw label text
-                  ctx.fillStyle = '#333';
-                  ctx.font = 'bold 11px Inter, sans-serif';
-                  ctx.textBaseline = 'middle';
-                  
-                  // Align text based on position
-                  if (Math.cos(midAngle) > 0) {
-                    ctx.textAlign = 'left';
-                    ctx.fillText(`${label}, ${formattedPercent}`, extendX + 5, lineEndY);
-                  } else {
-                    ctx.textAlign = 'right';
-                    ctx.fillText(`${label}, ${formattedPercent}`, extendX - 5, lineEndY);
-                  }
-                }
-                
-                currentAngle += angle;
-              });
-            });
-          }
-        }]
-      });
-    }
-
+    }]
+  });
+}
     function createMainTreeMap() {
       const ctx = document.getElementById('mainTreeMapChart')?.getContext('2d');
       destroyChart(mainTreeMapInstance, 'Main TreeMap');
@@ -1558,30 +1586,122 @@ Timestamp,BD1_DB1_BD6,BD1_DB2_UTILITIES,BD1_DB4_COATING
       createOtherTreeMap();
     }
 
-    function exportCSV() {
-      if (!monthlyData || !rawData) {
-        showErrorModal('No data available to export.');
-        return;
-      }
-      const allMeters = filteredData.headers.slice(1);
+   function exportCSV() {
+  if (!monthlyData || !rawData) {
+    showErrorModal('No data available to export.');
+    return;
+  }
 
-      let csvContent = 'Month,' + allMeters.join(',') + '\n';
-      monthlyData.labels.forEach((month, idx) => {
-        let row = month;
-        allMeters.forEach(meter => {
-          row += `,${monthlyData.deltas[meter][idx].toFixed(1)}`;
-        });
-        csvContent += row + '\n';
-      });
+  // 1. Original CSV (All Meters)
+  const allMeters = filteredData.headers.slice(1);
+  let csvContent = 'Month,' + allMeters.join(',') + '\n';
+  monthlyData.labels.forEach((month, idx) => {
+    let row = month;
+    allMeters.forEach(meter => {
+      row += `,${monthlyData.deltas[meter][idx].toFixed(1)}`;
+    });
+    csvContent += row + '\n';
+  });
 
-      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-      const link = document.createElement('a');
-      link.href = URL.createObjectURL(blob);
-      link.download = `monthly_energy_data_${new Date().toISOString().split('T')[0]}.csv`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
+  // Export Original CSV
+  const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+  const link = document.createElement('a');
+  link.href = URL.createObjectURL(blob);
+  link.download = `monthly_energy_data_${new Date().toISOString().split('T')[0]}.csv`;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+
+  // 2. Cost Center Monthly Share CSV
+  const selectedYear = document.getElementById('yearSelect').value;
+  const selectedMonthNum = parseInt(document.getElementById('monthSelect').value);
+  const selectedMonthKey = `${selectedYear}-${String(selectedMonthNum).padStart(2, '0')}`;
+  const selectedIndex = monthlyData.labels.indexOf(selectedMonthKey);
+  if (selectedIndex === -1) {
+    showErrorModal('Selected month not found for Cost Center export.');
+    return;
+  }
+
+  // Calculate Cost Center data
+  const groupToValue = {};
+  const groupToSection = {};
+  let sum11111 = 0;
+  let sumMain = 0;
+
+  // Calculate sum of main meters
+  allDatasets.forEach((dataset) => {
+    const label = dataset.label;
+    if (mainMeters.includes(label)) {
+      sumMain += monthlyData.deltas[label][selectedIndex] || 0;
     }
+  });
+
+  // Aggregate data by cost center
+  allDatasets.forEach((dataset) => {
+    const label = dataset.label;
+    if (mainMeters.includes(label)) return;
+    const value = monthlyData.deltas[label][selectedIndex] || 0;
+    if (value <= 0) return;
+    const cost = meterToCost[label] || '';
+    if (!cost.trim()) return;
+    if (cost === '11111') {
+      sum11111 += value;
+      return;
+    }
+    const section = meterToSection[label] || '';
+    const groupKey = cost;
+    groupToValue[groupKey] = (groupToValue[groupKey] || 0) + value;
+    if (!groupToSection[groupKey]) groupToSection[groupKey] = section;
+  });
+
+  if (groupToValue['11460']) {
+    groupToValue['11460'] = Math.max(0, groupToValue['11460'] - sum11111);
+  }
+
+  let totalCostCenters = 0;
+  for (const v of Object.values(groupToValue)) {
+    totalCostCenters += v;
+  }
+
+  const facilityValue = Math.max(0, sumMain - totalCostCenters);
+  const facilityKey = '11203';
+  groupToValue[facilityKey] = (groupToValue[facilityKey] || 0) + facilityValue;
+  groupToSection[facilityKey] = 'Facility';
+
+  // Allocate Facility if toggled
+  if (allocateFacility) {
+    const facilityValueToAlloc = groupToValue[facilityKey] || 0;
+    delete groupToValue[facilityKey];
+    let sumNonFacility = 0;
+    for (const v of Object.values(groupToValue)) {
+      sumNonFacility += v;
+    }
+    if (sumNonFacility > 0) {
+      for (const group in groupToValue) {
+        groupToValue[group] += (groupToValue[group] / sumNonFacility) * facilityValueToAlloc;
+      }
+    }
+  }
+
+  // Prepare Cost Center CSV
+  let costCsvContent = 'Cost Center,Section,Value (kWh)\n';
+  for (const group in groupToValue) {
+    const gValue = groupToValue[group];
+    if (gValue <= 0) continue;
+    const gSection = groupToSection[group] || '';
+    const name = /^\d+$/.test(group) ? `${group} - ${gSection}` : group;
+    costCsvContent += `${name},${gSection},${gValue.toFixed(1)}\n`;
+  }
+
+  // Export Cost Center CSV
+  const costBlob = new Blob([costCsvContent], { type: 'text/csv;charset=utf-8;' });
+  const costLink = document.createElement('a');
+  costLink.href = URL.createObjectURL(costBlob);
+  costLink.download = `cost_center_monthly_share_${selectedMonthKey}_${new Date().toISOString().split('T')[0]}.csv`;
+  document.body.appendChild(costLink);
+  costLink.click();
+  document.body.removeChild(costLink);
+}
 
     function exportPNG() {
       const canvases = [];
