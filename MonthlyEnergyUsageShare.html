@@ -871,7 +871,7 @@ Timestamp,BD1_DB1_BD6,BD1_DB2_UTILITIES,BD1_DB4_COATING
       for (let i = 0; i < retries; i++) {
         controller = new AbortController();
         try {
-          const timeoutId = setTimeout(() => controller.abort(), 8000);
+          const timeoutId = setTimeout(() => controller.abort(), 15000);
           const response = await fetch(url, {
             cache: 'no-store',
             signal: controller.signal
@@ -2045,3 +2045,4 @@ Timestamp,BD1_DB1_BD6,BD1_DB2_UTILITIES,BD1_DB4_COATING
   </script>
 </body>
 </html>
+
