@@ -4,13 +4,17 @@
  <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <title>Power Monitoring Dashboard</title>
+
 <!-- Font Awesome with lazy load -->
 <link rel="preload" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.1/css/all.min.css" as="style" onload="this.onload=null;this.rel='stylesheet'">
 <noscript><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.1/css/all.min.css"></noscript>
+
 <!-- Preload Chart.js -->
 <link rel="preload" href="https://cdn.jsdelivr.net/npm/chart.js" as="script" crossorigin>
+
 <!-- Load Chart.js deferred -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js" defer crossorigin></script>
+
 <style>
   * {
     margin: 0;
@@ -141,19 +145,6 @@
   }
   .topbar-item:hover::before {
     width: 80%;
-  }
-  .weather-info {
-    position: absolute;
-    right: 20px;
-    color: white;
-    font-size: 16px;
-    display: flex;
-    align-items: center;
-    gap: 15px;
-    font-weight: 500;
-  }
-  .weather-info i {
-    font-size: 18px;
   }
   .controls {
     padding: 20px 30px;
@@ -657,7 +648,7 @@
         <span>Main Incoming</span>
       </a>
       <a href="BuildingPowerAnalytics.html" class="topbar-item">
-        <i class="fas fa-bolt"></i>
+        <i class="fas fa-bolt"></i> 
         <span>Building Power</span>
       </a>
       <a href="MonthlyEnergyUsageShare.html" class="topbar-item" aria-label="Go to Monthly Energy Usage Share page">
@@ -665,7 +656,6 @@
         <span>Monthly Energy Usage Share</span>
       </a>
     </div>
-    <div id="weather" class="weather-info"></div>
   </div>
   <div class="container">
     <div class="header">
@@ -741,18 +731,12 @@
       <div class="chart-wrapper" id="totalChartWrapper" style="display: none;">
         <canvas id="totalChart"></canvas>
       </div>
-      <div class="chart-header" id="weatherChartHeader" style="display: none;">
-        <div class="chart-title"><i class="fas fa-cloud"></i> Weather Metrics (Past & Future 24 Hours)</div>
-      </div>
-      <div class="chart-wrapper" id="weatherChartWrapper" style="display: none;">
-        <canvas id="weatherChart"></canvas>
-      </div>
     </div>
   </div>
+
   <script>
     let chartInstance = null;
     let totalChartInstance = null;
-    let weatherChartInstance = null;
     let rawData = null;
     let allDatasets = [];
     let filteredData = null;
@@ -764,12 +748,14 @@
       '#EE5A12', '#0984e3', '#6C5CE7', '#A29BFE', '#FD79A8'
     ];
     const compressorMeters = ['BD2_GA90_VSD', 'BD1_COMP_AIR_GA90_2', 'BD1_COMP_AIR_GA90_1'];
+
     const fallbackData = `
 Timestamp,BD2_GA90_VSD,BD1_COMP_AIR_GA90_2,BD1_COMP_AIR_GA90_1,CHILLER_1
 01/01/2025 00:00,10.5,12.3,11.8,15.2
 01/01/2025 01:00,10.7,12.5,11.9,15.4
 01/01/2025 02:00,10.8,12.6,12.0,15.6
 `;
+
     function parseCustomDate(dateStr) {
       try {
         const [datePart, timePart] = dateStr.split(' ');
@@ -787,6 +773,7 @@ Timestamp,BD2_GA90_VSD,BD1_COMP_AIR_GA90_2,BD1_COMP_AIR_GA90_1,CHILLER_1
         return null;
       }
     }
+
     function filterLast24Hours(data) {
       if (!data || data.length === 0) {
         console.warn('No data to filter');
@@ -809,6 +796,7 @@ Timestamp,BD2_GA90_VSD,BD1_COMP_AIR_GA90_2,BD1_COMP_AIR_GA90_1,CHILLER_1
         return data;
       }
     }
+
     function cacheData(data) {
       try {
         localStorage.setItem('cachedData', JSON.stringify(data));
@@ -818,6 +806,7 @@ Timestamp,BD2_GA90_VSD,BD1_COMP_AIR_GA90_2,BD1_COMP_AIR_GA90_1,CHILLER_1
         console.warn('Error caching data:', error);
       }
     }
+
     function getCachedData() {
       try {
         const cached = localStorage.getItem('cachedData');
@@ -831,6 +820,7 @@ Timestamp,BD2_GA90_VSD,BD1_COMP_AIR_GA90_2,BD1_COMP_AIR_GA90_1,CHILLER_1
       }
       return null;
     }
+
     function showErrorModal(message) {
       const existingModal = document.querySelector('.error-modal');
       if (existingModal) existingModal.remove();
@@ -843,22 +833,25 @@ Timestamp,BD2_GA90_VSD,BD1_COMP_AIR_GA90_2,BD1_COMP_AIR_GA90_1,CHILLER_1
       document.body.appendChild(modal);
       setTimeout(() => modal.remove(), 10000); // Auto-close after 10 seconds
     }
+
     async function fetchWithRetry(url, retries = 3, delay = 2000) {
   let controller;
- 
+  
   for (let i = 0; i < retries; i++) {
     controller = new AbortController();
-   
+    
     try {
       const timeoutId = setTimeout(() => controller.abort(), 8000);
+
       const response = await fetch(url, {
         cache: 'no-store',
         signal: controller.signal
       });
+
       clearTimeout(timeoutId);
-     
+      
       if (!response.ok) throw new Error(`HTTP ${response.status}`);
-     
+      
       return await response.text();
     } catch (error) {
       if (error.name === 'AbortError' && i < retries - 1) {
@@ -870,10 +863,12 @@ Timestamp,BD2_GA90_VSD,BD1_COMP_AIR_GA90_2,BD1_COMP_AIR_GA90_1,CHILLER_1
     }
   }
 }
+
     async function loadData() {
       const loadingElement = document.getElementById('loading');
       const chartElement = document.getElementById('myChart');
       loadingElement.innerHTML = '<div class="spinner"></div><div class="loading-text">Loading data...</div>';
+
       // Check cached data first
       const cachedData = getCachedData();
       if (cachedData) {
@@ -887,13 +882,16 @@ Timestamp,BD2_GA90_VSD,BD1_COMP_AIR_GA90_2,BD1_COMP_AIR_GA90_1,CHILLER_1
         processData();
         return;
       }
+
       const originalUrl = 'https://www.dropbox.com/scl/fi/ujzaectxfzcd572a1ehb4/Chiller_Compress_Air.csv?rlkey=0myy02d0l5kfz8xxzkk7s011r&raw=1';
       const proxyUrls = [
         'https://corsproxy.io/?',
         'https://api.allorigins.win/raw?url='
       ];
+
       let csv = null;
       let successfulProxy = null;
+
       for (const proxy of proxyUrls) {
         const fullUrl = proxy + encodeURIComponent(originalUrl);
         try {
@@ -906,6 +904,7 @@ Timestamp,BD2_GA90_VSD,BD1_COMP_AIR_GA90_2,BD1_COMP_AIR_GA90_1,CHILLER_1
           console.warn(`Failed to fetch from ${proxy}:`, error.message);
         }
       }
+
       if (!csv) {
         console.warn('All proxies failed. Using fallback data.');
         loadingElement.innerHTML = `
@@ -913,18 +912,22 @@ Timestamp,BD2_GA90_VSD,BD1_COMP_AIR_GA90_2,BD1_COMP_AIR_GA90_1,CHILLER_1
           <div class="loading-text">Using fallback data. <br>Click <a href="#" onclick="event.preventDefault(); loadData();">here</a> to retry.</div>`;
         csv = fallbackData;
       }
+
       try {
         if (!csv || csv.trim() === '') {
           throw new Error('Received empty CSV data');
         }
+
         const lines = csv.trim().split(/\r?\n/); // รองรับทั้ง \n และ \r\n
         if (lines.length < 2) {
           throw new Error('CSV data is too short or invalid');
         }
+
         const headers = lines[0].split(',').map(h => h.trim());
         if (headers.length < 2) {
           throw new Error('CSV headers are invalid or missing');
         }
+
         const data = lines.slice(1).map(line => {
           const values = line.split(',');
           if (values.length !== headers.length) {
@@ -933,17 +936,21 @@ Timestamp,BD2_GA90_VSD,BD1_COMP_AIR_GA90_2,BD1_COMP_AIR_GA90_1,CHILLER_1
           }
           return values;
         }).filter(row => row !== null);
+
         if (data.length === 0) {
           throw new Error('No valid data rows found');
         }
+
         rawData = { timestamps: data.map(row => row[0]), headers, data };
         cacheData(rawData);
+
         const last24HoursData = filterLast24Hours(data);
         filteredData = {
           timestamps: last24HoursData.map(row => row[0]),
           headers,
           data: last24HoursData
         };
+
         processData();
       } catch (error) {
         console.error('Error loading data:', error);
@@ -953,9 +960,11 @@ Timestamp,BD2_GA90_VSD,BD1_COMP_AIR_GA90_2,BD1_COMP_AIR_GA90_1,CHILLER_1
         showErrorModal(`Failed to load data: ${error.message}`);
       }
     }
+
     function processData() {
       const loadingElement = document.getElementById('loading');
       const chartElement = document.getElementById('myChart');
+
       allDatasets = [];
       for (let i = 1; i < filteredData.headers.length; i++) {
         const label = filteredData.headers[i];
@@ -979,16 +988,17 @@ Timestamp,BD2_GA90_VSD,BD1_COMP_AIR_GA90_2,BD1_COMP_AIR_GA90_1,CHILLER_1
           pointHoverBorderWidth: 3
         });
       }
+
       createFilters();
       updateStats();
       createChart();
       if (isTotalChartVisible) {
         createTotalChart();
-        createWeatherChart();
       }
       loadingElement.style.display = 'none';
       chartElement.style.display = 'block';
     }
+
     function createFilters() {
       const filtersContainer = document.getElementById('meterFilters');
       filtersContainer.innerHTML = '';
@@ -998,30 +1008,37 @@ Timestamp,BD2_GA90_VSD,BD1_COMP_AIR_GA90_2,BD1_COMP_AIR_GA90_1,CHILLER_1
         return;
       }
       const latestData = filteredData.data[filteredData.data.length - 1];
+
       allDatasets.forEach((dataset, index) => {
         const value = parseFloat(latestData[index + 1]) || 0;
         let statusClass = 'status-off';
         if (value > 1) statusClass = 'status-active';
         else if (value > 0.05) statusClass = 'status-standby';
+
         const filterItem = document.createElement('div');
         filterItem.className = `filter-item ${statusClass}`;
+
         const checkbox = document.createElement('input');
         checkbox.type = 'checkbox';
         checkbox.id = `meter_${index}`;
         checkbox.checked = true;
         checkbox.addEventListener('change', updateChart);
+
         const label = document.createElement('label');
         label.htmlFor = `meter_${index}`;
         label.textContent = dataset.label;
+
         const colorIndicator = document.createElement('div');
         colorIndicator.className = 'color-indicator';
         colorIndicator.style.backgroundColor = dataset.borderColor;
+
         filterItem.appendChild(checkbox);
         filterItem.appendChild(label);
         filterItem.appendChild(colorIndicator);
         filtersContainer.appendChild(filterItem);
       });
     }
+
     function updateChart() {
       if (!chartInstance) {
         console.warn('Chart instance not found');
@@ -1030,27 +1047,29 @@ Timestamp,BD2_GA90_VSD,BD1_COMP_AIR_GA90_2,BD1_COMP_AIR_GA90_1,CHILLER_1
       const activeDatasets = [];
       const checkboxes = document.querySelectorAll('input[type="checkbox"]');
       const latestData = filteredData?.data[filteredData.data.length - 1];
+
       checkboxes.forEach((checkbox, index) => {
         const value = parseFloat(latestData?.[index + 1]) || 0;
         let statusClass = 'status-off';
         if (value > 1) statusClass = 'status-active';
         else if (value > 0.05) statusClass = 'status-standby';
+
         const filterItem = checkbox.parentElement;
         filterItem.className = `filter-item ${statusClass}`;
+
         if (checkbox.checked) {
           activeDatasets.push(allDatasets[index]);
         }
       });
+
       chartInstance.data.datasets = activeDatasets;
       chartInstance.update('none');
       updateStats();
       if (isTotalChartVisible && totalChartInstance) {
         createTotalChart();
       }
-      if (isTotalChartVisible && weatherChartInstance) {
-        createWeatherChart();
-      }
     }
+
     function updateStats() {
       if (!filteredData || filteredData.data.length === 0) {
         console.warn('No filtered data for stats');
@@ -1058,8 +1077,10 @@ Timestamp,BD2_GA90_VSD,BD1_COMP_AIR_GA90_2,BD1_COMP_AIR_GA90_1,CHILLER_1
       }
       const latestData = filteredData.data[filteredData.data.length - 1];
       const totalPower = latestData.slice(1).reduce((sum, val) => sum + (parseFloat(val) || 0), 0);
+
       let compressorTotal = 0;
       let chillerTotal = 0;
+
       for (let i = 1; i < filteredData.headers.length; i++) {
         const headerName = filteredData.headers[i].trim();
         const value = parseFloat(latestData[i]) || 0;
@@ -1069,19 +1090,23 @@ Timestamp,BD2_GA90_VSD,BD1_COMP_AIR_GA90_2,BD1_COMP_AIR_GA90_1,CHILLER_1
           chillerTotal += value;
         }
       }
+
       animateNumber('totalPowerCompressor', compressorTotal);
       animateNumber('totalPowerChiller', chillerTotal);
       animateNumber('totalPower', totalPower);
     }
+
     function animateNumber(elementId, targetValue) {
       const element = document.getElementById(elementId);
       if (!element) {
         console.warn(`Element with ID ${elementId} not found`);
         return;
       }
+
       const startValue = parseFloat(element.textContent) || 0;
       const duration = 500;
       const startTime = performance.now();
+
       function step(currentTime) {
         const elapsed = currentTime - startTime;
         const progress = Math.min(elapsed / duration, 1);
@@ -1091,8 +1116,10 @@ Timestamp,BD2_GA90_VSD,BD1_COMP_AIR_GA90_2,BD1_COMP_AIR_GA90_1,CHILLER_1
           requestAnimationFrame(step);
         }
       }
+
       requestAnimationFrame(step);
     }
+
     function destroyChart(instance, name) {
       if (instance) {
         try {
@@ -1105,6 +1132,7 @@ Timestamp,BD2_GA90_VSD,BD1_COMP_AIR_GA90_2,BD1_COMP_AIR_GA90_1,CHILLER_1
         console.warn(`${name} chart instance not found`);
       }
     }
+
     function createChart() {
       const ctx = document.getElementById('myChart')?.getContext('2d');
       if (!ctx) {
@@ -1223,6 +1251,7 @@ Timestamp,BD2_GA90_VSD,BD1_COMP_AIR_GA90_2,BD1_COMP_AIR_GA90_1,CHILLER_1
         }
       });
     }
+
     function calculateTotalData() {
       if (!filteredData || !filteredData.data) {
         console.warn('No filtered data for total chart');
@@ -1232,9 +1261,11 @@ Timestamp,BD2_GA90_VSD,BD1_COMP_AIR_GA90_2,BD1_COMP_AIR_GA90_1,CHILLER_1
           currentTotal: []
         };
       }
+
       const compressorTotal = [];
       const chillerTotal = [];
       const currentTotal = [];
+
       filteredData.data.forEach(row => {
         let compTotal = 0;
         let chillTotal = 0;
@@ -1251,8 +1282,10 @@ Timestamp,BD2_GA90_VSD,BD1_COMP_AIR_GA90_2,BD1_COMP_AIR_GA90_1,CHILLER_1
         chillerTotal.push(chillTotal.toFixed(1));
         currentTotal.push((compTotal + chillTotal).toFixed(1));
       });
+
       return { compressorTotal, chillerTotal, currentTotal };
     }
+
     function createTotalChart() {
       const ctx = document.getElementById('totalChart')?.getContext('2d');
       if (!ctx) {
@@ -1261,6 +1294,7 @@ Timestamp,BD2_GA90_VSD,BD1_COMP_AIR_GA90_2,BD1_COMP_AIR_GA90_1,CHILLER_1
       }
       destroyChart(totalChartInstance, 'Total');
       const { compressorTotal, chillerTotal, currentTotal } = calculateTotalData();
+
       totalChartInstance = new Chart(ctx, {
         type: 'line',
         data: {
@@ -1415,258 +1449,37 @@ Timestamp,BD2_GA90_VSD,BD1_COMP_AIR_GA90_2,BD1_COMP_AIR_GA90_1,CHILLER_1
         }
       });
     }
-    async function fetchWeatherData() {
-      const lat = 13.7348;
-      const lon = 100.7935;
-      const tz = 'Asia%2FBangkok';
-      const now = new Date();
-      const start = new Date(now.getTime() - 24 * 60 * 60 * 1000);
-      const startDate = start.toISOString().split('T')[0];
-      const endDate = now.toISOString().split('T')[0];
-      let historicalUrl = `https://archive-api.open-meteo.com/v1/archive?latitude=${lat}&longitude=${lon}&start_date=${startDate}&end_date=${endDate}&hourly=temperature_2m,relative_humidity_2m,wind_speed_10m&timezone=${tz}`;
-      let forecastUrl = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&hourly=temperature_2m,relative_humidity_2m,wind_speed_10m&timezone=${tz}&forecast_days=2`;
-      try {
-        const [histRes, foreRes] = await Promise.all([fetch(historicalUrl), fetch(forecastUrl)]);
-        if (!histRes.ok || !foreRes.ok) throw new Error('Failed to fetch weather data');
-        const histData = await histRes.json();
-        const foreData = await foreRes.json();
-        // Combine past and future
-        const allTimes = [...histData.hourly.time.slice(-24), ...foreData.hourly.time.slice(0, 25)]; // 24 past + current + 24 future, but adjust
-        const allTemp = [...histData.hourly.temperature_2m.slice(-24), ...foreData.hourly.temperature_2m.slice(0, 25)];
-        const allHum = [...histData.hourly.relative_humidity_2m.slice(-24), ...foreData.hourly.relative_humidity_2m.slice(0, 25)];
-        const allWind = [...histData.hourly.wind_speed_10m.slice(-24), ...foreData.hourly.wind_speed_10m.slice(0, 25)];
-        return { times: allTimes, temp: allTemp, hum: allHum, wind: allWind };
-      } catch (error) {
-        console.error('Weather data fetch error:', error);
-        showErrorModal('Failed to load weather data');
-        return null;
-      }
-    }
-    async function createWeatherChart() {
-      const ctx = document.getElementById('weatherChart')?.getContext('2d');
-      if (!ctx) {
-        console.error('Weather chart canvas context not found');
-        return;
-      }
-      destroyChart(weatherChartInstance, 'Weather');
-      const weatherData = await fetchWeatherData();
-      if (!weatherData) return;
-      const splitIndex = 24; // Index where future starts
-      weatherChartInstance = new Chart(ctx, {
-        type: 'line',
-        data: {
-          labels: weatherData.times.map(t => {
-            const date = new Date(t);
-            return `${date.toLocaleDateString()} ${date.toLocaleTimeString([], {hour: '2-digit', minute: '2-digit'})}`;
-          }),
-          datasets: [
-            {
-              label: 'Temperature (°C)',
-              data: weatherData.temp,
-              borderColor: '#FF6384',
-              backgroundColor: '#FF638420',
-              borderWidth: 3,
-              yAxisID: 'yTemp',
-              fill: false,
-              tension: 0.4,
-              pointRadius: 0,
-              pointHoverRadius: 6,
-              segment: {
-                borderColor: ctx => ctx.p0DataIndex < splitIndex ? '#FF6384' : 'rgba(255,99,132,0.5)'
-              }
-            },
-            {
-              label: 'Humidity (%)',
-              data: weatherData.hum,
-              borderColor: '#36A2EB',
-              backgroundColor: '#36A2EB20',
-              borderWidth: 3,
-              yAxisID: 'yHum',
-              fill: false,
-              tension: 0.4,
-              pointRadius: 0,
-              pointHoverRadius: 6,
-              segment: {
-                borderColor: ctx => ctx.p0DataIndex < splitIndex ? '#36A2EB' : 'rgba(54,162,235,0.5)'
-              }
-            },
-            {
-              label: 'Wind Speed (km/h)',
-              data: weatherData.wind,
-              borderColor: '#FFCE56',
-              backgroundColor: '#FFCE5620',
-              borderWidth: 3,
-              yAxisID: 'yWind',
-              fill: false,
-              tension: 0.4,
-              pointRadius: 0,
-              pointHoverRadius: 6,
-              segment: {
-                borderColor: ctx => ctx.p0DataIndex < splitIndex ? '#FFCE56' : 'rgba(255,206,86,0.5)'
-              }
-            }
-          ]
-        },
-        options: {
-          devicePixelRatio: 3,
-          responsive: true,
-          maintainAspectRatio: false,
-          plugins: {
-            legend: {
-              position: 'top',
-              labels: {
-                boxWidth: 12,
-                padding: 20,
-                usePointStyle: true,
-                font: { size: 13, weight: '600' },
-                color: '#495057'
-              }
-            },
-            tooltip: {
-              mode: 'index',
-              intersect: false,
-              backgroundColor: 'rgba(0, 0, 0, 0.9)',
-              titleColor: '#fff',
-              bodyColor: '#fff',
-              borderColor: '#667eea',
-              borderWidth: 2,
-              cornerRadius: 12,
-              displayColors: true,
-              padding: 15,
-              titleFont: { size: 14, weight: 'bold' },
-              bodyFont: { size: 13 }
-            }
-          },
-          scales: {
-            x: {
-              display: true,
-              title: {
-                display: true,
-                text: 'Time (Past 24h to Future 24h)',
-                font: { size: 15, weight: 'bold' },
-                color: '#495057'
-              },
-              ticks: {
-                maxTicksLimit: 24,
-                autoSkip: true,
-                font: { size: 12 },
-                color: '#6c757d',
-                callback: function (value, index, values) {
-                  return this.getLabelForValue(value).split(' ')[1];
-                }
-              },
-              grid: {
-                color: 'rgba(0, 0, 0, 0.05)',
-                drawBorder: false
-              }
-            },
-            yTemp: {
-              type: 'linear',
-              display: true,
-              position: 'left',
-              title: {
-                display: true,
-                text: 'Temperature (°C)',
-                font: { size: 15, weight: 'bold' },
-                color: '#FF6384'
-              },
-              ticks: {
-                font: { size: 12 },
-                color: '#FF6384'
-              },
-              grid: {
-                drawOnChartArea: false
-              }
-            },
-            yHum: {
-              type: 'linear',
-              display: true,
-              position: 'right',
-              title: {
-                display: true,
-                text: 'Humidity (%)',
-                font: { size: 15, weight: 'bold' },
-                color: '#36A2EB'
-              },
-              ticks: {
-                font: { size: 12 },
-                color: '#36A2EB'
-              },
-              grid: {
-                drawOnChartArea: false
-              }
-            },
-            yWind: {
-              type: 'linear',
-              display: true,
-              position: 'right',
-              title: {
-                display: true,
-                text: 'Wind Speed (km/h)',
-                font: { size: 15, weight: 'bold' },
-                color: '#FFCE56'
-              },
-              ticks: {
-                font: { size: 12 },
-                color: '#FFCE56'
-              },
-              grid: {
-                drawOnChartArea: false
-              }
-            }
-          },
-          interaction: {
-            mode: 'nearest',
-            axis: 'x',
-            intersect: false
-          },
-          animation: {
-            duration: 1500,
-            easing: 'easeInOutQuart'
-          },
-          elements: {
-            line: {
-              borderJoinStyle: 'round'
-            }
-          }
-        }
-      });
-    }
+
     function toggleTotalChart() {
       const totalChartWrapper = document.getElementById('totalChartWrapper');
       const totalChartHeader = document.getElementById('totalChartHeader');
-      const weatherChartWrapper = document.getElementById('weatherChartWrapper');
-      const weatherChartHeader = document.getElementById('weatherChartHeader');
       const expandButton = document.querySelector('button[onclick="toggleTotalChart()"]');
       isTotalChartVisible = !isTotalChartVisible;
+
       if (isTotalChartVisible) {
         totalChartWrapper.style.display = 'block';
         totalChartHeader.style.display = 'block';
-        weatherChartWrapper.style.display = 'block';
-        weatherChartHeader.style.display = 'block';
         expandButton.innerHTML = '<i class="fas fa-compress"></i> Collapse Data';
         if (!totalChartInstance) {
           createTotalChart();
         }
-        if (!weatherChartInstance) {
-          createWeatherChart();
-        }
       } else {
         totalChartWrapper.style.display = 'none';
         totalChartHeader.style.display = 'none';
-        weatherChartWrapper.style.display = 'none';
-        weatherChartHeader.style.display = 'none';
         expandButton.innerHTML = '<i class="fas fa-expand"></i> Expand Data';
       }
     }
+
     function selectAll() {
       document.querySelectorAll('input[type="checkbox"]').forEach(cb => cb.checked = true);
       updateChart();
     }
+
     function deselectAll() {
       document.querySelectorAll('input[type="checkbox"]').forEach(cb => cb.checked = false);
       updateChart();
     }
+
     function selectChillers() {
       document.querySelectorAll('input[type="checkbox"]').forEach((cb, index) => {
         const label = allDatasets[index]?.label.toLowerCase() || '';
@@ -1674,12 +1487,14 @@ Timestamp,BD2_GA90_VSD,BD1_COMP_AIR_GA90_2,BD1_COMP_AIR_GA90_1,CHILLER_1
       });
       updateChart();
     }
+
     function selectCompressors() {
       document.querySelectorAll('input[type="checkbox"]').forEach((cb, index) => {
         cb.checked = compressorMeters.includes(allDatasets[index]?.label);
       });
       updateChart();
     }
+
     function exportCSV() {
       if (!rawData) {
         showErrorModal('No data available to export.');
@@ -1689,10 +1504,12 @@ Timestamp,BD2_GA90_VSD,BD1_COMP_AIR_GA90_2,BD1_COMP_AIR_GA90_1,CHILLER_1
       document.querySelectorAll('input[type="checkbox"]').forEach((cb, index) => {
         if (cb.checked) activeColumns.push(index + 1);
       });
+
       let csvContent = rawData.headers.filter((_, i) => activeColumns.includes(i)).join(',') + '\n';
       rawData.data.forEach(row => {
         csvContent += row.filter((_, i) => activeColumns.includes(i)).join(',') + '\n';
       });
+
       const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
       const link = document.createElement('a');
       link.href = URL.createObjectURL(blob);
@@ -1701,6 +1518,7 @@ Timestamp,BD2_GA90_VSD,BD1_COMP_AIR_GA90_2,BD1_COMP_AIR_GA90_1,CHILLER_1
       link.click();
       document.body.removeChild(link);
     }
+
     function exportPNG() {
   const canvases = [];
   if (chartInstance) {
@@ -1709,31 +1527,37 @@ Timestamp,BD2_GA90_VSD,BD1_COMP_AIR_GA90_2,BD1_COMP_AIR_GA90_1,CHILLER_1
   if (isTotalChartVisible && totalChartInstance) {
     canvases.push({ canvas: totalChartInstance.canvas, name: 'total_power_chart' });
   }
-  if (isTotalChartVisible && weatherChartInstance) {
-    canvases.push({ canvas: weatherChartInstance.canvas, name: 'weather_chart' });
-  }
+
   if (canvases.length === 0) {
     showErrorModal('No chart available to export.');
     return;
   }
+
   // อัตราส่วนการขยาย (เช่น 2x resolution)
   const scale = 2;
+
   canvases.forEach(item => {
     // สร้าง canvas ใหม่ขนาดใหญ่ขึ้น
     const tempCanvas = document.createElement('canvas');
     const originalWidth = item.canvas.width;
     const originalHeight = item.canvas.height;
+
     tempCanvas.width = originalWidth * scale;
     tempCanvas.height = originalHeight * scale;
+
     const tempCtx = tempCanvas.getContext('2d');
+
     // ตั้งค่าคุณภาพสูง
     tempCtx.setTransform(scale, 0, 0, scale, 0, 0);
     tempCtx.fillStyle = 'white';
     tempCtx.fillRect(0, 0, originalWidth, originalHeight);
+
     // วาดภาพจาก canvas เดิม
     tempCtx.drawImage(item.canvas, 0, 0);
+
     // รีเซ็ต transform
     tempCtx.setTransform(1, 0, 0, 1, 0, 0);
+
     // สร้างลิงก์และดาวน์โหลด
     const link = document.createElement('a');
     link.download = `${item.name}_${new Date().toISOString().split('T')[0]}.png`;
@@ -1743,37 +1567,18 @@ Timestamp,BD2_GA90_VSD,BD1_COMP_AIR_GA90_2,BD1_COMP_AIR_GA90_1,CHILLER_1
     document.body.removeChild(link);
   });
 }
+
     function startAutoRefresh() {
       if (refreshInterval) clearInterval(refreshInterval);
       refreshInterval = setInterval(loadData, 15 * 60 * 1000);
     }
-    async function fetchWeather() {
-      const lat = 13.7348;
-      const lon = 100.7935;
-      const apiKey = 'e9068e075d3a7fe62a6cd8f0e5fd358f';
-      const url = `https://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lon}&appid=${apiKey}&units=metric`;
-      try {
-        const response = await fetch(url);
-        if (!response.ok) throw new Error(`HTTP ${response.status}`);
-        const data = await response.json();
-        const temp = Math.round(data.main.temp);
-        const humidity = data.main.humidity;
-        document.getElementById('weather').innerHTML = `
-          <span><i class="fas fa-thermometer-half"></i> ${temp}°C</span>
-          <span><i class="fas fa-tint"></i> ${humidity}%</span>
-        `;
-      } catch (error) {
-        console.error('Weather fetch error:', error);
-        document.getElementById('weather').innerHTML = '<span>Weather unavailable</span>';
-      }
-    }
+
     document.addEventListener('DOMContentLoaded', () => {
       document.body.style.opacity = '0';
       setTimeout(() => {
         document.body.style.transition = 'opacity 0.5s ease';
         document.body.style.opacity = '1';
       }, 100);
-      fetchWeather();
       loadData().then(() => {
         startAutoRefresh();
       }).catch(error => {
@@ -1784,6 +1589,7 @@ Timestamp,BD2_GA90_VSD,BD1_COMP_AIR_GA90_2,BD1_COMP_AIR_GA90_1,CHILLER_1
         showErrorModal(`Initial data load failed: ${error.message}`);
       });
     });
+
     document.addEventListener("contextmenu", e => e.preventDefault());
     document.addEventListener("keydown", e => {
       if ((e.ctrlKey && ['c', 'x', 'u', 's', 'p'].includes(e.key.toLowerCase())) || e.key === "F12") {
