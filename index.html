@@ -1258,32 +1258,45 @@ Timestamp,BD2_GA90_VSD,BD1_COMP_AIR_GA90_2,BD1_COMP_AIR_GA90_1,CHILLER_1
         return {
           compressorTotal: [],
           chillerTotal: [],
-          currentTotal: []
+          currentTotal: [],
+          bd1ChillerTotal: [],
+          bd2ChillerTotal: []
         };
       }
 
       const compressorTotal = [];
       const chillerTotal = [];
       const currentTotal = [];
+      const bd1ChillerTotal = [];
+      const bd2ChillerTotal = [];
 
       filteredData.data.forEach(row => {
         let compTotal = 0;
         let chillTotal = 0;
+        let bd1Chill = 0;
+        let bd2Chill = 0;
         for (let i = 1; i < filteredData.headers.length; i++) {
-          const headerName = filteredData.headers[i].trim();
+          const headerName = filteredData.headers[i].trim().toLowerCase();
           const value = parseFloat(row[i]) || 0;
-          if (compressorMeters.includes(headerName)) {
+          if (compressorMeters.includes(filteredData.headers[i].trim())) {
             compTotal += value;
-          } else if (headerName.toLowerCase().includes('chiller') || headerName.toLowerCase().includes('chill')) {
+          } else if (headerName.includes('chiller') || headerName.includes('chill')) {
             chillTotal += value;
+            if (headerName.includes('bd1')) {
+              bd1Chill += value;
+            } else if (headerName.includes('bd2')) {
+              bd2Chill += value;
+            }
           }
         }
         compressorTotal.push(compTotal.toFixed(1));
         chillerTotal.push(chillTotal.toFixed(1));
         currentTotal.push((compTotal + chillTotal).toFixed(1));
+        bd1ChillerTotal.push(bd1Chill.toFixed(1));
+        bd2ChillerTotal.push(bd2Chill.toFixed(1));
       });
 
-      return { compressorTotal, chillerTotal, currentTotal };
+      return { compressorTotal, chillerTotal, currentTotal, bd1ChillerTotal, bd2ChillerTotal };
     }
 
     function createTotalChart() {
@@ -1293,7 +1306,7 @@ Timestamp,BD2_GA90_VSD,BD1_COMP_AIR_GA90_2,BD1_COMP_AIR_GA90_1,CHILLER_1
         return;
       }
       destroyChart(totalChartInstance, 'Total');
-      const { compressorTotal, chillerTotal, currentTotal } = calculateTotalData();
+      const { compressorTotal, chillerTotal, currentTotal, bd1ChillerTotal, bd2ChillerTotal } = calculateTotalData();
 
       totalChartInstance = new Chart(ctx, {
         type: 'line',
@@ -1325,6 +1338,34 @@ Timestamp,BD2_GA90_VSD,BD1_COMP_AIR_GA90_2,BD1_COMP_AIR_GA90_1,CHILLER_1
               pointRadius: 0,
               pointHoverRadius: 6,
               pointHoverBackgroundColor: '#4ECDC4',
+              pointHoverBorderColor: '#fff',
+              pointHoverBorderWidth: 3
+            },
+            {
+              label: 'Total Power BD1 Chiller',
+              data: bd1ChillerTotal,
+              borderColor: '#96CEB4',
+              backgroundColor: '#96CEB420',
+              borderWidth: 3,
+              fill: false,
+              tension: 0.4,
+              pointRadius: 0,
+              pointHoverRadius: 6,
+              pointHoverBackgroundColor: '#96CEB4',
+              pointHoverBorderColor: '#fff',
+              pointHoverBorderWidth: 3
+            },
+            {
+              label: 'Total Power BD2 Chiller',
+              data: bd2ChillerTotal,
+              borderColor: '#FECA57',
+              backgroundColor: '#FECA5720',
+              borderWidth: 3,
+              fill: false,
+              tension: 0.4,
+              pointRadius: 0,
+              pointHoverRadius: 6,
+              pointHoverBackgroundColor: '#FECA57',
               pointHoverBorderColor: '#fff',
               pointHoverBorderWidth: 3
             },
